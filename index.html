@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AD's Kitchen – Entebbe's Finest</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red:   #C62828; --red-d: #8E0000; --red-l: #EF5350;
+      --gold:  #FBC02D; --gold-d: #F9A825; --gold-l: #FFF176;
+      --dark:  #1A1208; --dark2: #221A0A; --dark3: #2E2416;
+      --green: #2E7D32; --white: #FFFFFF; --off: #FFF8EE;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--dark); color: var(--white); overflow-x: hidden; }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 1000;
+      padding: 0.9rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: transparent;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(26,18,8,0.96);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 2px 40px rgba(0,0,0,0.5);
+      border-bottom: 1px solid rgba(251,192,45,0.12);
+    }
+    .nav-logo img { height: 52px; width: auto; display: block; filter: drop-shadow(0 2px 8px rgba(251,192,45,0.3)); }
+    .nav-links { display: flex; gap: 2.2rem; list-style: none; align-items: center; }
+    .nav-links a {
+      color: rgba(255,255,255,0.9); text-decoration: none;
+      font-size: 0.85rem; font-weight: 500; letter-spacing: 0.5px;
+      position: relative; transition: color 0.2s;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -3px; left: 0; width: 0; height: 2px;
+      background: var(--gold); border-radius: 2px; transition: width 0.3s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { width: 100%; }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--red), #E53935) !important;
+      color: var(--white) !important; padding: 0.6rem 1.5rem;
+      border-radius: 50px; font-weight: 600 !important; letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(198,40,40,0.4);
+      transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    .nav-cta::after { display: none !important; }
+    .nav-cta:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 28px rgba(198,40,40,0.6) !important; }
+    .burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; z-index: 10; }
+    .burger span { display: block; width: 26px; height: 2px; background: var(--white); border-radius: 2px; transition: 0.35s; }
+    .burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .burger.open span:nth-child(2) { opacity: 0; }
+    .burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 7rem 2rem 3rem;
+      position: relative; overflow: hidden;
+      background: var(--dark);
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(198,40,40,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(251,192,45,0.15) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 10% 60%, rgba(139,27,27,0.2) 0%, transparent 50%),
+        linear-gradient(160deg, #1A1208 0%, #2C1810 40%, #1A1208 100%);
+      animation: heroBgShift 8s ease-in-out infinite alternate;
+    }
+    @keyframes heroBgShift {
+      0%   { filter: hue-rotate(0deg) brightness(1); }
+      100% { filter: hue-rotate(8deg) brightness(1.08); }
+    }
+    .hero-grain {
+      position: absolute; inset: 0; z-index: 1; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px;
+    }
+    .particles { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+    .particle {
+      position: absolute; font-size: 1.8rem; opacity: 0;
+      animation: floatParticle var(--dur, 12s) var(--delay, 0s) linear infinite;
+      filter: blur(0.5px);
+    }
+    @keyframes floatParticle {
+      0%   { transform: translateY(110vh) translateX(0) rotate(0deg);   opacity: 0; }
+      5%   { opacity: 0.25; }
+      95%  { opacity: 0.25; }
+      100% { transform: translateY(-20vh) translateX(var(--drift,40px)) rotate(360deg); opacity: 0; }
+    }
+    .hero-content {
+      position: relative; z-index: 3;
+      width: 100%; max-width: 820px;
+      margin-left: auto; margin-right: auto;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(251,192,45,0.1); border: 1px solid rgba(251,192,45,0.4);
+      color: var(--gold); font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      padding: 0.45rem 1.2rem; border-radius: 50px; margin-bottom: 1.8rem;
+      animation: fadeDown 0.9s ease both;
+    }
+    .hero-logo {
+      height: 160px; width: auto; margin-bottom: 1.2rem;
+      filter: drop-shadow(0 8px 40px rgba(251,192,45,0.3));
+      animation: fadeDown 0.9s 0.1s ease both;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 9vw, 7.5rem);
+      font-weight: 900; line-height: 0.95; letter-spacing: -2px;
+      animation: fadeUp 1s 0.25s ease both;
+    }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-tagline {
+      margin-top: 1.6rem;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      font-weight: 300; color: rgba(255,255,255,0.6);
+      max-width: 520px; line-height: 1.7;
+      animation: fadeUp 1s 0.45s ease both;
+    }
+    .hero-actions {
+      margin-top: 2.8rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 1s 0.6s ease both;
+    }
+    .btn-red {
+      background: linear-gradient(135deg, var(--red), #E53935);
+      color: var(--white); border: none; border-radius: 50px;
+      padding: 1rem 2.4rem; font-size: 1rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; letter-spacing: 0.3px;
+      box-shadow: 0 6px 28px rgba(198,40,40,0.5);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .btn-red:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(198,40,40,0.65); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.07); color: var(--white);
+      border: 1.5px solid rgba(255,255,255,0.25); border-radius: 50px;
+      padding: 1rem 2.4rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.25s, color 0.25s, background 0.25s, transform 0.25s;
+    }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold); background: rgba(251,192,45,0.08); transform: translateY(-3px); }
+
+    /* Stats bar */
+    .hero-stats {
+      margin-top: 5rem; padding: 2rem 3rem;
+      display: flex; gap: 0; flex-wrap: wrap; justify-content: center;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; backdrop-filter: blur(10px);
+      animation: fadeUp 1s 0.8s ease both;
+    }
+    .stat {
+      text-align: center; padding: 0.5rem 2.5rem;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--gold-l));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.45); letter-spacing: 2px; text-transform: uppercase; margin-top: 0.2rem; }
+
+    /* Scroll indicator */
+    .scroll-cue {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem; z-index: 3;
+      color: rgba(255,255,255,0.3); font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase;
+    }
+    .scroll-mouse {
+      width: 22px; height: 36px; border: 1.5px solid rgba(255,255,255,0.25);
+      border-radius: 11px; display: flex; justify-content: center; padding-top: 6px;
+    }
+    .scroll-wheel {
+      width: 3px; height: 6px; background: var(--gold);
+      border-radius: 2px; animation: scrollWheel 1.5s ease-in-out infinite;
+    }
+    @keyframes scrollWheel { 0%,100% { transform: translateY(0); opacity:1; } 60% { transform: translateY(8px); opacity:0; } }
+
+    /* ─── MARQUEE STRIP ─── */
+    .marquee-wrap {
+      background: linear-gradient(90deg, var(--red), #B71C1C);
+      padding: 0.75rem 0; overflow: hidden;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .marquee-track {
+      display: flex; gap: 0; white-space: nowrap;
+      animation: marqueeScroll 25s linear infinite;
+    }
+    .marquee-track span {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,255,255,0.9); padding: 0 2.5rem;
+    }
+    .marquee-track span.dot-sep { color: var(--gold); padding: 0; font-size: 1rem; }
+    @keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ─── WAVE ─── */
+    .wave { display: block; width: 100%; margin-bottom: -2px; }
+
+    /* ─── SECTION COMMONS ─── */
+    section { padding: 6rem 2rem; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .section-eyebrow {
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 0.6rem; display: block;
+    }
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.05;
+    }
+    .heading-line {
+      display: inline-block; width: 56px; height: 5px; border-radius: 3px;
+      background: linear-gradient(90deg, var(--red), var(--gold));
+      margin: 1.1rem 0 2rem; vertical-align: middle;
+    }
+
+    /* ─── ABOUT ─── */
+    #about { background: var(--off); color: var(--dark); padding-top: 0; }
+    #about .section-eyebrow { color: var(--red); }
+    #about .section-heading { color: var(--dark); }
+    .about-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; padding-top: 5rem; }
+    .about-body p { font-size: 1.05rem; line-height: 1.85; color: #4A3F30; margin-bottom: 1rem; }
+    .features-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 2rem; }
+    .feat {
+      display: flex; align-items: center; gap: 1rem;
+      background: #fff; border-radius: 14px; padding: 1rem 1.25rem;
+      border-left: 4px solid var(--red);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .feat:hover { transform: translateX(6px); box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
+    .feat-icon { font-size: 1.7rem; flex-shrink: 0; }
+    .feat-body strong { display: block; font-size: 0.9rem; font-weight: 700; color: var(--dark); }
+    .feat-body span { font-size: 0.8rem; color: #7A6A55; }
+
+    /* Hours card */
+    .hours-card {
+      background: linear-gradient(145deg, #1A1208, #2C1810);
+      border-radius: 28px; padding: 2.8rem;
+      color: var(--white); position: relative; overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    }
+    .hours-card::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(251,192,45,0.18) 0%, transparent 70%);
+    }
+    .hours-card::after {
+      content: ''; position: absolute; bottom: -40px; left: -40px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(198,40,40,0.15) 0%, transparent 70%);
+    }
+    .hours-emoji { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .hours-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.7rem; color: var(--gold); margin-bottom: 0.4rem;
+    }
+    .hours-card > p { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 2rem; }
+    .hours-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 1.5rem; }
+    .hours-label { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 0.8rem; display: block; }
+    .hours-row { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .hours-row:last-of-type { border-bottom: none; }
+    .hours-row span:first-child { font-size: 0.9rem; color: rgba(255,255,255,0.75); }
+    .hours-row span:last-child { font-size: 0.9rem; font-weight: 700; color: var(--gold); }
+    .open-pill {
+      margin-top: 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(46,125,50,0.2); border: 1px solid rgba(102,187,106,0.4);
+      color: #81C784; border-radius: 50px; padding: 0.4rem 1rem; font-size: 0.78rem; font-weight: 600;
+    }
+    .pulse-dot { width: 7px; height: 7px; background: #81C784; border-radius: 50%; animation: pulseDot 1.5s ease-in-out infinite; }
+    @keyframes pulseDot { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.5); opacity:0.5; } }
+
+    /* ─── STATS BAND ─── */
+    .stats-band {
+      background: linear-gradient(135deg, var(--red), #B71C1C, var(--red-d));
+      padding: 4rem 2rem;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; max-width: 900px; margin: 0 auto; text-align: center; }
+    .band-stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.2rem; font-weight: 900; color: var(--white);
+      line-height: 1;
+    }
+    .band-stat-num span { color: var(--gold); }
+    .band-stat-lbl { font-size: 0.72rem; color: rgba(255,255,255,0.65); letter-spacing: 2px; text-transform: uppercase; margin-top: 0.4rem; }
+
+    /* ─── MENU ─── */
+    #menu { background: var(--dark2); }
+    .menu-header { margin-bottom: 3rem; }
+    .tab-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
+    .tab {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.5rem; border-radius: 14px;
+      border: 1.5px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.55); font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: all 0.25s;
+    }
+    .tab:hover { border-color: rgba(251,192,45,0.4); color: var(--gold); background: rgba(251,192,45,0.05); }
+    .tab.active {
+      background: linear-gradient(135deg, var(--red), #E53935);
+      border-color: transparent; color: var(--white);
+      box-shadow: 0 6px 20px rgba(198,40,40,0.4);
+    }
+    .menu-panel { display: none; }
+    .menu-panel.active { display: block; animation: tabFade 0.35s ease; }
+    @keyframes tabFade { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 1.5rem; }
+    .mcard {
+      background: linear-gradient(145deg, #2C2210, #241C0C);
+      border-radius: 20px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+    }
+    .mcard:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .mcard-img {
+      height: 190px; display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem;
+      background: linear-gradient(135deg, rgba(198,40,40,0.15), rgba(251,192,45,0.1));
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      position: relative; overflow: hidden;
+    }
+    .mcard-img img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transition: transform 0.45s ease;
+    }
+    .mcard:hover .mcard-img img { transform: scale(1.07); }
+    .mcard-img::before {
+      content: ''; position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.25) 100%);
+    }
+    .mcard-img img { z-index: 0; }
+    .mcard-body { padding: 1.3rem 1.4rem 1.5rem; }
+    .mcard-name { font-family: 'Playfair Display', serif; font-size: 1.08rem; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.3; }
+    .mcard-desc { font-size: 0.8rem; color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 1rem; }
+    .mcard-footer { display: flex; align-items: center; justify-content: space-between; }
+    .mcard-price {
+      font-size: 1rem; font-weight: 800; color: var(--gold);
+    }
+    .mcard-badge {
+      font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--red), #E53935);
+      color: var(--white); padding: 0.25rem 0.6rem; border-radius: 6px;
+    }
+    .mcard-badge.green { background: linear-gradient(135deg, var(--green), #388E3C); }
+    .mcard-badge.gold  { background: linear-gradient(135deg, #E65100, var(--gold-d)); }
+
+    /* ─── SPECIALS CALLOUT ─── */
+    .specials-band {
+      background: linear-gradient(135deg, #2C1810 0%, #3D2212 50%, #2C1810 100%);
+      padding: 5rem 2rem;
+      border-top: 2px solid rgba(251,192,45,0.2);
+      border-bottom: 2px solid rgba(251,192,45,0.2);
+    }
+    .specials-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; }
+    .special-card {
+      text-align: center; padding: 2.5rem 1.5rem;
+      background: rgba(255,255,255,0.04); border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .special-card:hover { transform: translateY(-4px); border-color: rgba(251,192,45,0.3); }
+    .special-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .special-card h4 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--gold); margin-bottom: 0.5rem; }
+    .special-card p { font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.65; }
+
+    /* ─── LOCATION ─── */
+    #location { background: var(--dark); }
+    #location .section-heading { color: var(--white); }
+    .location-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+    .info-row {
+      display: flex; gap: 1rem; align-items: flex-start;
+      padding: 1.3rem 1.5rem;
+      background: rgba(255,255,255,0.04); border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.07); margin-bottom: 1rem;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .info-row:hover { border-color: rgba(251,192,45,0.3); transform: translateX(4px); }
+    .info-icon-box {
+      width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(198,40,40,0.2), rgba(198,40,40,0.08));
+      border: 1px solid rgba(198,40,40,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+    }
+    .info-label { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 0.2rem; display: block; }
+    .info-value { font-size: 0.95rem; color: rgba(255,255,255,0.85); }
+    .info-value a { color: rgba(255,255,255,0.85); text-decoration: none; }
+    .info-value a:hover { color: var(--gold); }
+
+    .map-box {
+      background: linear-gradient(145deg, #1A1208, #2C1810);
+      border-radius: 24px; height: 380px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.2rem; border: 1px solid rgba(255,255,255,0.07);
+      position: relative; overflow: hidden;
+    }
+    .map-box::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(198,40,40,0.12) 0%, transparent 65%);
+    }
+    .map-pin-icon { font-size: 3.5rem; filter: drop-shadow(0 4px 16px rgba(198,40,40,0.5)); animation: pinBounce 2s ease-in-out infinite; }
+    @keyframes pinBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .map-box h4 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold); z-index: 1; }
+    .map-box p { font-size: 0.85rem; color: rgba(255,255,255,0.45); z-index: 1; }
+    .map-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem; z-index: 1;
+      background: linear-gradient(135deg, var(--red), #E53935);
+      color: var(--white); padding: 0.7rem 1.6rem; border-radius: 50px;
+      text-decoration: none; font-size: 0.88rem; font-weight: 700;
+      box-shadow: 0 4px 20px rgba(198,40,40,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(198,40,40,0.55); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: #0D0A04;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .footer-top {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr;
+      gap: 3rem; padding: 4rem 2rem 3rem;
+    }
+    .footer-brand img { height: 70px; width: auto; margin-bottom: 1rem; }
+    .footer-brand p { font-size: 0.88rem; color: rgba(255,255,255,0.4); line-height: 1.7; max-width: 280px; }
+    .footer-col h5 {
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.2rem;
+    }
+    .footer-col a { display: block; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.88rem; margin-bottom: 0.7rem; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--gold); }
+    .footer-bottom-bar {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .footer-bottom-bar p { font-size: 0.78rem; color: rgba(255,255,255,0.2); }
+    .footer-heart { color: var(--red); }
+
+    /* ─── WHATSAPP FLOAT ─── */
+    .wa-float {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+      display: flex; align-items: center; gap: 0.7rem;
+      background: #25D366; color: var(--white);
+      border-radius: 50px; padding: 0.85rem 1.4rem;
+      box-shadow: 0 8px 30px rgba(37,211,102,0.45);
+      text-decoration: none; font-weight: 700; font-size: 0.9rem;
+      transition: transform 0.25s, box-shadow 0.25s;
+      animation: waPop 0.6s 1.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .wa-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 14px 40px rgba(37,211,102,0.6); }
+    @keyframes waPop { from { opacity:0; transform: scale(0.5) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+    .wa-icon { font-size: 1.4rem; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(30px);  } to { opacity:1; transform:translateY(0); } }
+    .reveal { opacity:0; transform:translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+    /* Ensure stats-band items are never stuck invisible */
+    .stats-band .reveal { transition-delay: 0s; }
+
+    /* ─── LOCAL CUISINES ─── */
+    #local-cuisine {
+      background: linear-gradient(160deg, #1C1005 0%, #2A1A08 40%, #1C1005 100%);
+      position: relative; overflow: hidden;
+    }
+    #local-cuisine::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 50%, rgba(198,40,40,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 85% 30%, rgba(251,192,45,0.06) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    #local-cuisine .container { position: relative; z-index: 1; }
+    #local-cuisine .section-heading { color: var(--white); }
+
+    .cuisine-intro {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 2rem; flex-wrap: wrap; margin-bottom: 3rem;
+    }
+    .cuisine-intro-text { flex: 1; min-width: 240px; }
+    .cuisine-intro-text p {
+      font-size: 0.95rem; color: rgba(255,255,255,0.5); line-height: 1.8; margin-top: 1rem; max-width: 480px;
+    }
+    .cuisine-badge-strip {
+      display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0;
+      background: rgba(251,192,45,0.08); border: 1px solid rgba(251,192,45,0.25);
+      border-radius: 50px; padding: 0.55rem 1.2rem;
+    }
+    .cuisine-badge-strip span { font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+
+    /* Stew card grid — wider photos, more immersive */
+    .stew-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.6rem;
+    }
+    .stew-card {
+      border-radius: 22px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: linear-gradient(145deg, #2E1E0A, #241608);
+      transition: transform 0.32s, box-shadow 0.32s;
+      position: relative;
+    }
+    .stew-card:hover { transform: translateY(-7px); box-shadow: 0 22px 56px rgba(0,0,0,0.55); }
+
+    .stew-img {
+      width: 100%; height: 210px;
+      position: relative; overflow: hidden;
+    }
+    .stew-img img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+      display: block;
+    }
+    .stew-card:hover .stew-img img { transform: scale(1.08); }
+    .stew-img::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%);
+      pointer-events: none;
+    }
+    /* price chip floating on the image */
+    .stew-price-chip {
+      position: absolute; bottom: 0.8rem; right: 0.9rem; z-index: 2;
+      background: rgba(26,18,8,0.82); border: 1px solid rgba(251,192,45,0.45);
+      backdrop-filter: blur(6px);
+      color: var(--gold); font-size: 0.9rem; font-weight: 800;
+      padding: 0.3rem 0.8rem; border-radius: 50px;
+      letter-spacing: 0.3px;
+    }
+
+    .stew-body { padding: 1.1rem 1.3rem 1.4rem; }
+    .stew-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--white);
+      margin-bottom: 0.35rem; line-height: 1.25;
+    }
+    .stew-desc {
+      font-size: 0.78rem; color: rgba(255,255,255,0.42); line-height: 1.6;
+      margin-bottom: 0.9rem;
+    }
+    .stew-footer {
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .stew-tag {
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 0.22rem 0.65rem; border-radius: 6px;
+      background: linear-gradient(135deg, #E65100, var(--gold-d));
+      color: var(--white);
+    }
+    .stew-tag.green { background: linear-gradient(135deg, var(--green), #388E3C); }
+    .stew-tag.red   { background: linear-gradient(135deg, var(--red), #E53935); }
+
+    /* ─── MOBILE ─── */
+    @media (max-width: 900px) {
+      .about-wrap, .location-wrap { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .specials-inner { grid-template-columns: 1fr; }
+      .stew-grid { grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); }
+      .cuisine-intro { flex-direction: column; align-items: flex-start; }
+      .footer-top { grid-template-columns: 1fr; gap: 2rem; }
+      .footer-bottom-bar { flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none; flex-direction: column; position: absolute;
+        top: 100%; left: 0; right: 0;
+        background: rgba(26,18,8,0.98); backdrop-filter: blur(20px);
+        padding: 1.5rem 2rem; gap: 1.25rem;
+        border-bottom: 1px solid rgba(251,192,45,0.1);
+      }
+      .nav-links.open { display: flex; }
+      .burger { display: flex; }
+      .hero-stats { padding: 1.5rem; gap: 0; }
+      .stat { padding: 0.5rem 1.2rem; }
+      .tab-row { gap: 0.5rem; }
+      .tab { padding: 0.55rem 1rem; font-size: 0.82rem; }
+      .wa-float span { display: none; }
+      .wa-float { padding: 1rem; border-radius: 50%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo"><img src="ADs_Kitchen_logo_transparent.png" alt="AD's Kitchen" /></div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#menu">Menu</a></li>
+    <li><a href="#local-cuisine">Local Cuisine</a></li>
+    <li><a href="#location">Location</a></li>
+    <li><a href="tel:+256784313399" class="nav-cta">📞 Call Now</a></li>
+  </ul>
+  <div class="burger" id="burger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grain"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">🍽️ Entebbe's Favourite Kitchen</div>
+    <img src="ADs_Kitchen_logo_transparent.png" alt="AD's Kitchen" class="hero-logo" />
+    <h1 class="hero-title">Bold Flavour.<br/><em>Ugandan Soul.</em></h1>
+    <p class="hero-tagline">From crispy chips to hearty katogo — every meal at AD's Kitchen is made with love, fresh ingredients, and the spirit of Entebbe.</p>
+    <div class="hero-actions">
+      <a href="#menu" class="btn-red">Explore Our Menu</a>
+      <a href="https://wa.me/256784313399" class="btn-ghost" target="_blank" rel="noopener">💬 Order on WhatsApp</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" data-target="15">0</div><div class="stat-lbl">Menu Items</div></div>
+      <div class="stat"><div class="stat-num" data-target="16">0</div><div class="stat-lbl">Hours Open</div></div>
+      <div class="stat"><div class="stat-num" data-target="100">0</div><div class="stat-lbl">% Fresh Daily</div></div>
+      <div class="stat"><div class="stat-num" data-target="7">0</div><div class="stat-lbl">Days a Week</div></div>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span>Scroll</span>
+    <div class="scroll-mouse"><div class="scroll-wheel"></div></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span>Chips &amp; Chicken</span><span class="dot-sep">✦</span>
+    <span>Beef Stew</span><span class="dot-sep">✦</span>
+    <span>Katogo</span><span class="dot-sep">✦</span>
+    <span>Goat Stew</span><span class="dot-sep">✦</span>
+    <span>Fresh Juice</span><span class="dot-sep">✦</span>
+    <span>Chicken Stew</span><span class="dot-sep">✦</span>
+    <span>Chips &amp; Fish</span><span class="dot-sep">✦</span>
+    <span>G.Nuts Stew</span><span class="dot-sep">✦</span>
+    <span>Open Daily 8AM–Midnight</span><span class="dot-sep">✦</span>
+    <span>Peas Stew</span><span class="dot-sep">✦</span>
+    <span>Entebbe Kitooro</span><span class="dot-sep">✦</span>
+    <span>Fish Stew</span><span class="dot-sep">✦</span>
+    <span>Chapati</span><span class="dot-sep">✦</span>
+    <span>Offals Stew</span><span class="dot-sep">✦</span>
+    <span>Authentic Ugandan</span><span class="dot-sep">✦</span>
+    <!-- Duplicate for seamless loop -->
+    <span>Chips &amp; Chicken</span><span class="dot-sep">✦</span>
+    <span>Beef Stew</span><span class="dot-sep">✦</span>
+    <span>Katogo</span><span class="dot-sep">✦</span>
+    <span>Goat Stew</span><span class="dot-sep">✦</span>
+    <span>Fresh Juice</span><span class="dot-sep">✦</span>
+    <span>Chicken Stew</span><span class="dot-sep">✦</span>
+    <span>Chips &amp; Fish</span><span class="dot-sep">✦</span>
+    <span>G.Nuts Stew</span><span class="dot-sep">✦</span>
+    <span>Open Daily 8AM–Midnight</span><span class="dot-sep">✦</span>
+    <span>Peas Stew</span><span class="dot-sep">✦</span>
+    <span>Entebbe Kitooro</span><span class="dot-sep">✦</span>
+    <span>Fish Stew</span><span class="dot-sep">✦</span>
+    <span>Chapati</span><span class="dot-sep">✦</span>
+    <span>Offals Stew</span><span class="dot-sep">✦</span>
+    <span>Authentic Ugandan</span><span class="dot-sep">✦</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <svg class="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,30 C360,60 1080,0 1440,30 L1440,0 L0,0 Z" fill="#1A1208"/></svg>
+  <div class="container">
+    <div class="about-wrap">
+      <div class="about-body reveal">
+        <span class="section-eyebrow">Our Story</span>
+        <h2 class="section-heading">Taste the Heart<br/>of Uganda</h2>
+        <div class="heading-line"></div>
+        <p>Experience the heart of Ugandan cuisine at AD's Kitchen, where every dish tells a story of local flavour and tradition. Our menu celebrates the best of Entebbe with authentic, mouthwatering meals made from the freshest ingredients.</p>
+        <p>For those on the go, we serve a range of quick and delicious fast food options — ensuring there's always something to satisfy every craving.</p>
+        <div class="features-list">
+          <div class="feat">
+            <div class="feat-icon">🌿</div>
+            <div class="feat-body"><strong>Locally Sourced</strong><span>Fresh produce from Entebbe's finest suppliers</span></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🍳</div>
+            <div class="feat-body"><strong>Made Fresh Daily</strong><span>Every meal prepared to order, every time</span></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🇺🇬</div>
+            <div class="feat-body"><strong>Authentic Ugandan Recipes</strong><span>Traditional flavours, perfected over time</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hours-card reveal">
+        <span class="hours-emoji">🕐</span>
+        <h3>We're Open Every Day</h3>
+        <p>Come hungry, leave happy. Breakfast through midnight.</p>
+        <div class="hours-divider"></div>
+        <span class="hours-label">Opening Hours</span>
+        <div class="hours-row"><span>Monday – Sunday</span><span>8:00 AM – 12:00 AM</span></div>
+        <div class="hours-row"><span>Public Holidays</span><span>8:00 AM – 12:00 AM</span></div>
+        <div class="open-pill" id="openPill">
+          <div class="pulse-dot"></div> Open Now
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAND -->
+<div class="stats-band">
+  <div class="stats-grid container">
+    <div class="reveal">
+      <div class="band-stat-num">15<span>+</span></div>
+      <div class="band-stat-lbl">Delicious Menu Items</div>
+    </div>
+    <div class="reveal">
+      <div class="band-stat-num">16<span>h</span></div>
+      <div class="band-stat-lbl">Open Every Single Day</div>
+    </div>
+    <div class="reveal">
+      <div class="band-stat-num">100<span>%</span></div>
+      <div class="band-stat-lbl">Fresh Ingredients</div>
+    </div>
+    <div class="reveal">
+      <div class="band-stat-num">1<span>#</span></div>
+      <div class="band-stat-lbl">Spot in Entebbe Kitooro</div>
+    </div>
+  </div>
+</div>
+
+<!-- MENU -->
+<section id="menu">
+  <div class="container">
+    <div class="menu-header reveal">
+      <span class="section-eyebrow">What We Serve</span>
+      <h2 class="section-heading" style="color:var(--white);">Our Menu</h2>
+      <div class="heading-line"></div>
+    </div>
+
+    <div class="tab-row reveal">
+      <button class="tab active" onclick="showTab('top',this)">⭐ Top Sellers</button>
+      <button class="tab" onclick="showTab('breakfast',this)">🌅 Breakfast</button>
+      <button class="tab" onclick="showTab('fastfood',this)">🍟 Fast Food</button>
+      <button class="tab" onclick="showTab('drinks',this)">🥤 Drinks</button>
+    </div>
+
+    <!-- TOP SELLERS -->
+    <div id="top" class="menu-panel active">
+      <div class="menu-grid">
+        <div class="mcard">
+          <div class="mcard-img">🍟🍗<img src="img/chips-chicken.jpg" alt="Chips Chicken" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Chicken + Mango Juice</div>
+            <div class="mcard-desc">Crispy fries served with juicy fried chicken, plus a free mango juice.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 23,000</span><span class="mcard-badge">🔥 Hot</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🫀<img src="img/chips-liver.jpg" alt="Chips Liver" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Liver + Mango Juice</div>
+            <div class="mcard-desc">Deep-fried chips paired with savory liver and a refreshing mango juice.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 30,000</span><span class="mcard-badge">🔥 Hot</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🐐<img src="img/chips-goat.jpg" alt="Chips Goat" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Goat + Mango Juice</div>
+            <div class="mcard-desc">Tender goat meat with crispy fries, washed down with mango juice.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 25,000</span><span class="mcard-badge">🔥 Hot</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🥩<img src="img/chips-beef.jpg" alt="Chips Beef" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Beef + Mango Juice</div>
+            <div class="mcard-desc">Golden chips served with tender, flavorful beef and a free mango juice.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 20,000</span><span class="mcard-badge">🔥 Hot</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BREAKFAST -->
+    <div id="breakfast" class="menu-panel">
+      <div class="menu-grid">
+        <div class="mcard">
+          <div class="mcard-img">🍌🥘<img src="img/katogo.jpg" alt="Katogo" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Katogo</div>
+            <div class="mcard-desc">A traditional Ugandan breakfast with a hearty mix of plantains and stew.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 12,000</span><span class="mcard-badge gold">🇺🇬 Local</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟<img src="img/chips.jpg" alt="Chips" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Plain Chips</div>
+            <div class="mcard-desc">Crispy golden fries served hot. Simple, satisfying perfection.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 10,000</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🌭<img src="img/sausages.jpg" alt="Sausages" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Sausages</div>
+            <div class="mcard-desc">Tasty, well-seasoned sausages — the perfect way to start your day.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 7,000</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍳<img src="img/omelette.jpg" alt="Omelette" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Omelette</div>
+            <div class="mcard-desc">Fluffy eggs cooked to perfection with optional vegetables.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 6,000</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🫓<img src="img/chapati.jpg" alt="Chapati" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chapati</div>
+            <div class="mcard-desc">Golden, flaky, pan-fried chapati — perfect as a side or snack.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 4,000</span><span class="mcard-badge green">⭐ Fan Fave</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAST FOOD -->
+    <div id="fastfood" class="menu-panel">
+      <div class="menu-grid">
+        <div class="mcard">
+          <div class="mcard-img">🐟🍟<img src="img/chips-fish.jpg" alt="Chips Fish" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Whole Fish</div>
+            <div class="mcard-desc">Whole fried fish served with fresh, hot chips. A true Entebbe classic.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 40,000</span><span class="mcard-badge gold">🏆 Premium</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🫀<img src="img/chips-liver.jpg" alt="Chips Liver" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Liver</div>
+            <div class="mcard-desc">Deep-fried chips paired with savory, perfectly seasoned liver.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 30,000</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🐐<img src="img/chips-goat.jpg" alt="Chips Goat" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Goat</div>
+            <div class="mcard-desc">A delicious serving of tender goat meat with crispy golden fries.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 25,000</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🍗<img src="img/chips-chicken.jpg" alt="Chips Chicken" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Chicken</div>
+            <div class="mcard-desc">Crispy fries served with juicy, golden-fried chicken.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 23,000</span><span class="mcard-badge">🔥 Hot</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍟🥩<img src="img/chips-beef.jpg" alt="Chips Beef" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Chips Beef</div>
+            <div class="mcard-desc">Golden chips served with tender, flavorful seasoned beef.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 20,000</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRINKS -->
+    <div id="drinks" class="menu-panel">
+      <div class="menu-grid">
+        <div class="mcard">
+          <div class="mcard-img">🥤<img src="img/juice.jpg" alt="Juice" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Juice (No Sugar)</div>
+            <div class="mcard-desc">100% natural fruit juice — pure, cold, and totally guilt-free.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 13,000</span><span class="mcard-badge green">🌿 Healthy</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🍹<img src="img/cocktail-juice.jpg" alt="Cocktail Juice" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Cocktail Juice</div>
+            <div class="mcard-desc">A refreshing tropical blend — taste Uganda in every sip.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 13,000</span><span class="mcard-badge gold">🌟 Popular</span></div>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-img">🧃<img src="img/mango-juice.jpg" alt="Mango Juice" loading="lazy" /></div>
+          <div class="mcard-body">
+            <div class="mcard-name">Juice</div>
+            <div class="mcard-desc">Freshly made juice with just the right sweetness. Ice cold.</div>
+            <div class="mcard-footer"><span class="mcard-price">USh 6,500</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALS BAND -->
+<div class="specials-band">
+  <div class="specials-inner">
+    <div class="special-card reveal">
+      <span class="special-icon">🥭</span>
+      <h4>Free Mango Juice</h4>
+      <p>Every top-seller meal comes with a complimentary fresh mango juice. Because you deserve a treat.</p>
+    </div>
+    <div class="special-card reveal">
+      <span class="special-icon">🇺🇬</span>
+      <h4>Authentic Ugandan</h4>
+      <p>Our recipes celebrate the rich culinary heritage of Uganda — real ingredients, real flavour.</p>
+    </div>
+    <div class="special-card reveal">
+      <span class="special-icon">⚡</span>
+      <h4>Quick & Fresh</h4>
+      <p>Fast food shouldn't mean compromising on quality. Every order is made fresh, every time.</p>
+    </div>
+  </div>
+</div>
+
+<!-- LOCAL CUISINES -->
+<section id="local-cuisine">
+  <div class="container">
+    <div class="cuisine-intro reveal">
+      <div class="cuisine-intro-text">
+        <span class="section-eyebrow">Ugandan Stews</span>
+        <h2 class="section-heading">Local Cuisines</h2>
+        <div class="heading-line"></div>
+        <p>Slow-cooked with love and generations of tradition. Our hearty Ugandan stews are served with your choice of posho, rice, or matooke — the real taste of home.</p>
+      </div>
+      <div class="cuisine-badge-strip">
+        <span>🇺🇬</span>
+        <span>Authentic &amp; Homemade</span>
+      </div>
+    </div>
+
+    <div class="stew-grid">
+
+      <!-- Beef Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/beef-stew.jpg" alt="Beef Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 12,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Beef Stew</div>
+          <div class="stew-desc">Tender chunks of beef slow-cooked in a rich, spiced tomato sauce. Comfort in every bite.</div>
+          <div class="stew-footer">
+            <span class="stew-tag red">🔥 Popular</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chicken Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/chicken-stew.jpg" alt="Chicken Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 15,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Chicken Stew</div>
+          <div class="stew-desc">Succulent chicken pieces cooked down in a fragrant, deeply savoury Ugandan sauce.</div>
+          <div class="stew-footer">
+            <span class="stew-tag red">🔥 Popular</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fish Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/fish-stew.jpg" alt="Fish Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 15,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Fish Stew</div>
+          <div class="stew-desc">Fresh Nile perch simmered in a tangy, herb-infused stew. A true lake-side favourite.</div>
+          <div class="stew-footer">
+            <span class="stew-tag">🐟 Lake Fresh</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gnuts Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/gnuts-stew.jpg" alt="Groundnut Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 7,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">G.Nuts Stew</div>
+          <div class="stew-desc">Creamy groundnut sauce, slow-cooked to perfection. Uganda's most beloved vegetarian stew.</div>
+          <div class="stew-footer">
+            <span class="stew-tag green">🌿 Veggie</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goat Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/goat-stew.jpg" alt="Goat Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 18,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Goat Stew</div>
+          <div class="stew-desc">Richly spiced goat meat braised until fall-off-the-bone tender. The pride of the kitchen.</div>
+          <div class="stew-footer">
+            <span class="stew-tag">🏆 Premium</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offals Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/offals-stew.jpg" alt="Offals Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 13,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Offals Stew</div>
+          <div class="stew-desc">A hearty mix of carefully cleaned and seasoned offals — bold, traditional, and deeply satisfying.</div>
+          <div class="stew-footer">
+            <span class="stew-tag red">🇺🇬 Local</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peas Stew -->
+      <div class="stew-card reveal">
+        <div class="stew-img">
+          <img src="img/peas-stew.jpg" alt="Peas Stew" loading="lazy" />
+          <div class="stew-price-chip">USh 8,000</div>
+        </div>
+        <div class="stew-body">
+          <div class="stew-name">Peas Stew</div>
+          <div class="stew-desc">Soft, slow-simmered peas in a lightly spiced sauce. Simple, wholesome, and full of flavour.</div>
+          <div class="stew-footer">
+            <span class="stew-tag green">🌿 Veggie</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- LOCATION -->
+<section id="location">
+  <div class="container">
+    <div class="location-wrap">
+      <div class="reveal">
+        <span class="section-eyebrow">Find Us</span>
+        <h2 class="section-heading">Come Visit Us</h2>
+        <div class="heading-line"></div>
+
+        <div class="info-row">
+          <div class="info-icon-box">📍</div>
+          <div><span class="info-label">Address</span><span class="info-value">Entebbe Kitooro, Uganda</span></div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon-box">📞</div>
+          <div><span class="info-label">Phone</span><span class="info-value"><a href="tel:+256784313399">+256 784 313 399</a></span></div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon-box">🕐</div>
+          <div><span class="info-label">Hours</span><span class="info-value">Mon – Sun &nbsp;|&nbsp; 8:00 AM – 12:00 AM</span></div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon-box">🍽️</div>
+          <div><span class="info-label">Cuisine</span><span class="info-value">Fast Food &amp; Local Ugandan Cuisine</span></div>
+        </div>
+        <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;">
+          <a href="tel:+256784313399" class="btn-red">📞 Call to Order</a>
+          <a href="https://wa.me/256784313399" class="btn-ghost" target="_blank" rel="noopener">💬 WhatsApp Us</a>
+        </div>
+      </div>
+
+      <div class="map-box reveal">
+        <div class="map-pin-icon">📍</div>
+        <h4>AD's Kitchen</h4>
+        <p>Entebbe Kitooro, Uganda</p>
+        <a href="https://maps.google.com/?q=Kitooro+Entebbe+Uganda" class="map-btn" target="_blank" rel="noopener">🗺️ Open in Google Maps</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand reveal">
+      <img src="ADs_Kitchen_logo_transparent.png" alt="AD's Kitchen" />
+      <p>Where Ugandan tradition meets bold flavour. Fresh ingredients, generous portions, and a taste of home — every single day in Entebbe.</p>
+    </div>
+    <div class="footer-col reveal">
+      <h5>Navigate</h5>
+      <a href="#hero">Home</a>
+      <a href="#about">About Us</a>
+      <a href="#menu">Our Menu</a>
+      <a href="#local-cuisine">Local Cuisine</a>
+      <a href="#location">Location</a>
+    </div>
+    <div class="footer-col reveal">
+      <h5>Contact</h5>
+      <a href="tel:+256784313399">+256 784 313 399</a>
+      <a href="https://wa.me/256784313399" target="_blank" rel="noopener">WhatsApp Us</a>
+      <a href="https://maps.google.com/?q=Kitooro+Entebbe+Uganda" target="_blank" rel="noopener">Entebbe Kitooro</a>
+      <a href="#location">Get Directions</a>
+    </div>
+  </div>
+  <div class="footer-bottom-bar">
+    <p>&copy; 2026 AD's Kitchen. All rights reserved.</p>
+    <p>Made with <span class="footer-heart">❤️</span> in Entebbe, Uganda</p>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/256784313399" class="wa-float" target="_blank" rel="noopener">
+  <span class="wa-icon">💬</span>
+  <span>Order on WhatsApp</span>
+</a>
+
+<script>
+  // Nav scroll
+  const nav = document.getElementById('navbar');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
+
+  // Mobile nav
+  function toggleNav() {
+    const b = document.getElementById('burger');
+    const nl = document.getElementById('navLinks');
+    b.classList.toggle('open');
+    nl.classList.toggle('open');
+  }
+  document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => {
+    document.getElementById('burger').classList.remove('open');
+    document.getElementById('navLinks').classList.remove('open');
+  }));
+
+  // Menu tabs
+  function showTab(id, btn) {
+    document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // Scroll reveal
+  const ro = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 100);
+        ro.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(r => ro.observe(r));
+
+  // Counter animation
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target;
+        const target = +el.dataset.target;
+        let start = 0;
+        const step = () => {
+          start += Math.ceil(target / 40);
+          if (start >= target) { el.textContent = target + (target === 100 ? '' : ''); return; }
+          el.textContent = start;
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+        counterObs.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('[data-target]').forEach(el => counterObs.observe(el));
+
+  // Open/closed status
+  (function() {
+    const h = new Date().getHours();
+    const isOpen = h >= 8 && h < 24;
+    const pill = document.getElementById('openPill');
+    if (pill && !isOpen) {
+      pill.innerHTML = '<div class="pulse-dot" style="background:#EF5350;animation:none"></div> Currently Closed';
+      pill.style.background = 'rgba(198,40,40,0.15)';
+      pill.style.borderColor = 'rgba(239,83,80,0.4)';
+      pill.style.color = '#EF9A9A';
+    }
+  })();
+
+  // Floating food particles
+  const foods = ['🍟','🍗','🥭','🍌','🥤','🍳','🫓','🌭','🐟','🥩'];
+  const container = document.getElementById('particles');
+  foods.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = f;
+    el.style.cssText = `left:${10 + i * 9}%;--dur:${14 + i * 2}s;--delay:${i * 1.4}s;--drift:${(i % 2 === 0 ? '' : '-')}${30 + i * 8}px;`;
+    container.appendChild(el);
+  });
+</script>
+</body>
+</html>
