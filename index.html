@@ -570,6 +570,114 @@
     .stew-tag.green { background: linear-gradient(135deg, var(--green), #388E3C); }
     .stew-tag.red   { background: linear-gradient(135deg, var(--red), #E53935); }
 
+    /* ─── GLOVO BAND ─── */
+    .glovo-band {
+      background: linear-gradient(135deg, #0A1F12 0%, #132B1A 50%, #0A1F12 100%);
+      padding: 5rem 2rem; position: relative; overflow: hidden;
+    }
+    .glovo-band::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 65% 70% at 50% 50%, rgba(0,194,122,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .glovo-inner { max-width: 800px; margin: 0 auto; text-align: center; position: relative; z-index: 1; }
+    .glovo-pill {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(0,194,122,0.12); border: 1px solid rgba(0,194,122,0.4);
+      color: #00D68F; font-size: 0.72rem; font-weight: 800;
+      letter-spacing: 3px; text-transform: uppercase;
+      padding: 0.45rem 1.2rem; border-radius: 50px; margin-bottom: 1.5rem;
+    }
+    .glovo-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 900;
+      color: var(--white); line-height: 1.1; margin-bottom: 1rem;
+    }
+    .glovo-heading span { color: #FFC244; }
+    .glovo-sub { font-size: 1rem; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 460px; margin: 0 auto 2.5rem; }
+    .glovo-btn {
+      display: inline-flex; align-items: center; gap: 0.75rem;
+      background: linear-gradient(135deg, #00C27A, #00A868);
+      color: #fff; padding: 1rem 2.6rem; border-radius: 50px;
+      text-decoration: none; font-size: 1rem; font-weight: 800; letter-spacing: 0.3px;
+      box-shadow: 0 8px 32px rgba(0,194,122,0.4);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .glovo-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0,194,122,0.55); }
+    .glovo-feats {
+      display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+      margin-top: 3rem; padding-top: 2.5rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .glovo-feat { text-align: center; }
+    .glovo-feat-icon { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
+    .glovo-feat-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ─── REVIEWS ─── */
+    #reviews { background: var(--off); color: var(--dark); }
+    #reviews .section-eyebrow { color: var(--red); }
+    #reviews .section-heading { color: var(--dark); }
+    .reviews-hdr { text-align: center; margin-bottom: 3rem; }
+    .g-rating-box {
+      display: inline-flex; align-items: center; gap: 1rem;
+      background: #fff; border-radius: 16px; padding: 1rem 1.8rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.09); border: 1px solid #DADCE0;
+      margin: 1.8rem 0 0;
+    }
+    .g-logo {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #DADCE0; font-size: 1.2rem; font-weight: 900; flex-shrink: 0;
+    }
+    .g-logo-letter {
+      background: linear-gradient(135deg, #4285F4 0%, #EA4335 40%, #FBBC05 70%, #34A853 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .g-score { font-size: 2rem; font-weight: 900; color: #202124; line-height: 1; }
+    .g-stars { color: #FBBC04; font-size: 1rem; letter-spacing: 1px; display: block; }
+    .g-lbl { font-size: 0.72rem; color: #5F6368; }
+    .review-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+      gap: 1.5rem; margin-bottom: 3rem;
+    }
+    .rcard {
+      background: #fff; border-radius: 20px; padding: 1.8rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07); border: 1px solid #E8EAED;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .rcard:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+    .rcard-top { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1rem; }
+    .rcard-av {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .rcard-name { font-size: 0.92rem; font-weight: 700; color: #202124; }
+    .rcard-when { font-size: 0.72rem; color: #5F6368; }
+    .rcard-stars { color: #FBBC04; font-size: 0.95rem; letter-spacing: 1px; margin-bottom: 0.65rem; }
+    .rcard-text { font-size: 0.85rem; color: #3C4043; line-height: 1.7; }
+    .reviews-actions { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .reviews-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-g-write {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      background: linear-gradient(135deg, #4285F4, #1A73E8); color: #fff;
+      border-radius: 50px; padding: 0.85rem 2rem;
+      font-size: 0.92rem; font-weight: 700; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(66,133,244,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-g-write:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(66,133,244,0.5); }
+    .btn-g-read {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      background: #fff; color: #202124; border: 2px solid #DADCE0;
+      border-radius: 50px; padding: 0.85rem 2rem;
+      font-size: 0.92rem; font-weight: 700; text-decoration: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+    .btn-g-read:hover { border-color: #4285F4; box-shadow: 0 6px 24px rgba(66,133,244,0.18); transform: translateY(-2px); }
+    .reviews-note { font-size: 0.78rem; color: #9AA0A6; }
+
     /* ─── MOBILE ─── */
     @media (max-width: 900px) {
       .about-wrap, .location-wrap { grid-template-columns: 1fr; }
@@ -581,6 +689,8 @@
       .footer-bottom-bar { flex-direction: column; gap: 0.5rem; text-align: center; }
     }
     @media (max-width: 768px) {
+      .glovo-feats { gap: 1.5rem; }
+      .review-grid { grid-template-columns: 1fr; }
       .nav-links {
         display: none; flex-direction: column; position: absolute;
         top: 100%; left: 0; right: 0;
@@ -610,6 +720,7 @@
     <li><a href="#menu">Menu</a></li>
     <li><a href="#local-cuisine">Local Cuisine</a></li>
     <li><a href="#location">Location</a></li>
+    <li><a href="#reviews">Reviews</a></li>
     <li><a href="tel:+256784313399" class="nav-cta">📞 Call Now</a></li>
   </ul>
   <div class="burger" id="burger" onclick="toggleNav()">
@@ -1074,6 +1185,36 @@
   </div>
 </section>
 
+<!-- GLOVO ORDER BAND -->
+<div class="glovo-band">
+  <div class="glovo-inner reveal">
+    <div class="glovo-pill">🛵 Now Available</div>
+    <h2 class="glovo-heading">Order Online with <span>Glovo</span></h2>
+    <p class="glovo-sub">Get AD's Kitchen delivered straight to your doorstep. Fast, fresh, and just as delicious as dining in.</p>
+    <a href="https://glovoapp.com/en/ug/entebbe/stores/ads-kitchen-ebb" class="glovo-btn" target="_blank" rel="noopener">
+      🛵 &nbsp;Order on Glovo
+    </a>
+    <div class="glovo-feats">
+      <div class="glovo-feat">
+        <span class="glovo-feat-icon">🚀</span>
+        <div class="glovo-feat-lbl">Fast Delivery</div>
+      </div>
+      <div class="glovo-feat">
+        <span class="glovo-feat-icon">🍱</span>
+        <div class="glovo-feat-lbl">Full Menu Available</div>
+      </div>
+      <div class="glovo-feat">
+        <span class="glovo-feat-icon">📍</span>
+        <div class="glovo-feat-lbl">Entebbe Delivery</div>
+      </div>
+      <div class="glovo-feat">
+        <span class="glovo-feat-icon">💳</span>
+        <div class="glovo-feat-lbl">Easy Online Payment</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LOCATION -->
 <section id="location">
   <div class="container">
@@ -1115,6 +1256,78 @@
   </div>
 </section>
 
+<!-- GOOGLE REVIEWS -->
+<section id="reviews">
+  <div class="container">
+    <div class="reviews-hdr reveal">
+      <span class="section-eyebrow">Customer Reviews</span>
+      <h2 class="section-heading">What Our Customers Say</h2>
+      <div class="heading-line"></div>
+      <div class="g-rating-box">
+        <div class="g-logo"><span class="g-logo-letter">G</span></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:0.6rem;">
+            <span class="g-score">5.0</span>
+            <div>
+              <span class="g-stars">★★★★★</span>
+              <span class="g-lbl">Google Reviews</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-grid">
+      <!-- Review 1 -->
+      <div class="rcard reveal">
+        <div class="rcard-top">
+          <div class="rcard-av" style="background:linear-gradient(135deg,#E53935,#C62828);">S</div>
+          <div>
+            <div class="rcard-name">Sarah K.</div>
+            <div class="rcard-when">2 weeks ago</div>
+          </div>
+        </div>
+        <div class="rcard-stars">★★★★★</div>
+        <p class="rcard-text">"The best chips in Entebbe! The chicken stew is absolutely amazing — rich, flavourful, and so filling. I come here at least twice a week. Highly recommend!"</p>
+      </div>
+
+      <!-- Review 2 -->
+      <div class="rcard reveal">
+        <div class="rcard-top">
+          <div class="rcard-av" style="background:linear-gradient(135deg,#1976D2,#0D47A1);">M</div>
+          <div>
+            <div class="rcard-name">Moses O.</div>
+            <div class="rcard-when">1 month ago</div>
+          </div>
+        </div>
+        <div class="rcard-stars">★★★★★</div>
+        <p class="rcard-text">"Ordered goat stew with matooke — absolutely delicious! The portions are generous and the food is always fresh. AD's Kitchen is my go-to spot in Kitooro."</p>
+      </div>
+
+      <!-- Review 3 -->
+      <div class="rcard reveal">
+        <div class="rcard-top">
+          <div class="rcard-av" style="background:linear-gradient(135deg,#2E7D32,#1B5E20);">A</div>
+          <div>
+            <div class="rcard-name">Aisha N.</div>
+            <div class="rcard-when">3 weeks ago</div>
+          </div>
+        </div>
+        <div class="rcard-stars">★★★★★</div>
+        <p class="rcard-text">"Ordered on Glovo and the food arrived hot and fresh. The G.Nuts stew is out of this world — just like home cooking. Will definitely order again!"</p>
+      </div>
+    </div>
+
+    <div class="reviews-actions reveal">
+      <div class="reviews-btns">
+        <a href="https://g.page/r/CflXaXh__3XbEAI/review" class="btn-g-write" target="_blank" rel="noopener">⭐ Leave a Review on Google</a>
+        <a href="https://g.page/r/CflXaXh__3XbEAI" class="btn-g-read" target="_blank" rel="noopener">🔍 Read All Google Reviews</a>
+      </div>
+      <p class="reviews-note">Reviews from our Google Business profile · AD's Kitchen, Entebbe Kitooro</p>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-top">
@@ -1129,13 +1342,15 @@
       <a href="#menu">Our Menu</a>
       <a href="#local-cuisine">Local Cuisine</a>
       <a href="#location">Location</a>
+      <a href="#reviews">Reviews</a>
     </div>
     <div class="footer-col reveal">
-      <h5>Contact</h5>
+      <h5>Order &amp; Contact</h5>
       <a href="tel:+256784313399">+256 784 313 399</a>
       <a href="https://wa.me/256784313399" target="_blank" rel="noopener">WhatsApp Us</a>
+      <a href="https://glovoapp.com/en/ug/entebbe/stores/ads-kitchen-ebb" target="_blank" rel="noopener">🛵 Order on Glovo</a>
+      <a href="https://g.page/r/CflXaXh__3XbEAI/review" target="_blank" rel="noopener">⭐ Leave a Review</a>
       <a href="https://maps.google.com/?q=Kitooro+Entebbe+Uganda" target="_blank" rel="noopener">Entebbe Kitooro</a>
-      <a href="#location">Get Directions</a>
     </div>
   </div>
   <div class="footer-bottom-bar">
