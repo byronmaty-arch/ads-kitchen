@@ -402,30 +402,19 @@
     .info-value a { color: rgba(255,255,255,0.85); text-decoration: none; }
     .info-value a:hover { color: var(--gold); }
 
+    .map-label {
+      font-size: 0.95rem; color: rgba(255,255,255,0.55);
+      margin-bottom: 0.9rem; font-weight: 500; letter-spacing: 0.02em;
+    }
+    .map-label strong { color: var(--gold); font-weight: 700; }
     .map-box {
-      background: linear-gradient(145deg, #1A1208, #2C1810);
-      border-radius: 24px; height: 380px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 1.2rem; border: 1px solid rgba(255,255,255,0.07);
-      position: relative; overflow: hidden;
+      border-radius: 20px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     }
-    .map-box::before {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 40%, rgba(198,40,40,0.12) 0%, transparent 65%);
+    .map-box iframe {
+      width: 100%; height: 420px; border: 0; display: block;
     }
-    .map-pin-icon { font-size: 3.5rem; filter: drop-shadow(0 4px 16px rgba(198,40,40,0.5)); animation: pinBounce 2s ease-in-out infinite; }
-    @keyframes pinBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    .map-box h4 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--gold); z-index: 1; }
-    .map-box p { font-size: 0.85rem; color: rgba(255,255,255,0.45); z-index: 1; }
-    .map-btn {
-      display: inline-flex; align-items: center; gap: 0.5rem; z-index: 1;
-      background: linear-gradient(135deg, var(--red), #E53935);
-      color: var(--white); padding: 0.7rem 1.6rem; border-radius: 50px;
-      text-decoration: none; font-size: 0.88rem; font-weight: 700;
-      box-shadow: 0 4px 20px rgba(198,40,40,0.4);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(198,40,40,0.55); }
 
     /* ─── FOOTER ─── */
     footer {
@@ -692,6 +681,7 @@
     @media (max-width: 768px) {
       .glovo-feats { gap: 1.5rem; }
       .review-grid { grid-template-columns: 1fr; }
+      .map-box iframe { height: 280px; }
       .nav-links {
         display: none; flex-direction: column; position: absolute;
         top: 100%; left: 0; right: 0;
@@ -1247,11 +1237,17 @@
         </div>
       </div>
 
-      <div class="map-box reveal">
-        <div class="map-pin-icon">📍</div>
-        <h4>AD's Kitchen</h4>
-        <p>Entebbe Kitooro, Uganda</p>
-        <a href="https://maps.google.com/?q=Kitooro+Entebbe+Uganda" class="map-btn" target="_blank" rel="noopener">🗺️ Open in Google Maps</a>
+      <div class="reveal">
+        <p class="map-label">Location of <strong>AD's Kitchen, Kitooro Entebbe</strong></p>
+        <div class="map-box">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7976!2d32.463141!3d0.0562563!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x177d87004eecd85f%3A0xdb75ff7f786957f9!2sAD's%20Kitchen!5e0!3m2!1sen!2sug!4v1741939200000!5m2!1sen!2sug"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="AD's Kitchen on Google Maps">
+          </iframe>
+        </div>
       </div>
     </div>
   </div>
