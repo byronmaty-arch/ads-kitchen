@@ -358,7 +358,7 @@
   // - Local dev: http://localhost:3000
   // - Production: Railway URL (update PROD_API_BASE below after deploying)
   // Can also be overridden at runtime by setting ?api=https://... in the URL.
-  const PROD_API_BASE = 'https://ads-kitchen-production.up.railway.app'; // TODO: replace with real Railway URL after first deploy
+  const PROD_API_BASE = 'https://ads-kitchen-production.up.railway.app';
   const urlOverride = new URLSearchParams(location.search).get('api');
   const API_BASE = urlOverride
     || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
