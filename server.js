@@ -32,6 +32,9 @@ function seedDataDirIfEmpty() {
 }
 seedDataDirIfEmpty();
 
+// Trust Railway's proxy so req.ip / x-forwarded-for reflect the real client
+app.set('trust proxy', true);
+
 app.use(express.json());
 
 // CORS for public ordering API (allow adskitchens.com + localhost dev)
@@ -206,11 +209,85 @@ function seedDefaults() {
 seedDefaults();
 
 // --- AUTH ---
+// --- LOGIN RATE LIMITER ---
+// Prevents brute-forcing 4-digit PINs. Tracks failed attempts per IP.
+// After MAX_FAILS failures within WINDOW_MS, lock the IP out for LOCKOUT_MS.
+// A successful login clears that IP's counter immediately.
+const loginAttempts = new Map(); // ip -> { fails: [timestamps], lockedUntil: ts|null }
+const LOGIN_WINDOW_MS = 5 * 60 * 1000;   // rolling 5-minute window
+const LOGIN_MAX_FAILS = 5;               // 5 wrong PINs
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000; // then locked for 15 minutes
+
+function getClientIp(req) {
+  return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
+    .toString().split(',')[0].trim();
+}
+
+function checkLoginRateLimit(ip) {
+  const now = Date.now();
+  const rec = loginAttempts.get(ip) || { fails: [], lockedUntil: null };
+  if (rec.lockedUntil && now < rec.lockedUntil) {
+    const minsLeft = Math.ceil((rec.lockedUntil - now) / 60000);
+    return { allowed: false, retryAfterMin: minsLeft };
+  }
+  if (rec.lockedUntil && now >= rec.lockedUntil) {
+    // Lockout expired — reset
+    rec.fails = [];
+    rec.lockedUntil = null;
+    loginAttempts.set(ip, rec);
+  }
+  return { allowed: true };
+}
+
+function recordLoginFailure(ip) {
+  const now = Date.now();
+  const rec = loginAttempts.get(ip) || { fails: [], lockedUntil: null };
+  rec.fails = rec.fails.filter(t => now - t < LOGIN_WINDOW_MS);
+  rec.fails.push(now);
+  if (rec.fails.length >= LOGIN_MAX_FAILS) {
+    rec.lockedUntil = now + LOGIN_LOCKOUT_MS;
+    console.warn(`[auth] IP ${ip} locked out after ${rec.fails.length} failed attempts`);
+  }
+  loginAttempts.set(ip, rec);
+}
+
+function clearLoginFailures(ip) {
+  loginAttempts.delete(ip);
+}
+
+// Periodic cleanup so the Map doesn't grow unbounded
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, rec] of loginAttempts) {
+    const stale = (!rec.lockedUntil || rec.lockedUntil < now)
+      && rec.fails.every(t => now - t > LOGIN_WINDOW_MS);
+    if (stale) loginAttempts.delete(ip);
+  }
+}, 10 * 60 * 1000).unref();
+
 app.post('/api/auth/login', (req, res) => {
-  const { pin } = req.body;
+  const ip = getClientIp(req);
+  const check = checkLoginRateLimit(ip);
+  if (!check.allowed) {
+    return res.status(429).json({
+      error: `Too many failed attempts. Try again in ${check.retryAfterMin} minute${check.retryAfterMin === 1 ? '' : 's'}.`
+    });
+  }
+
+  const { pin } = req.body || {};
+  if (!pin) {
+    recordLoginFailure(ip);
+    return res.status(400).json({ error: 'PIN required' });
+  }
+
   const staff = readData('staff.json');
   const user = staff.find(s => s.pin === pin && s.active);
-  if (!user) return res.status(401).json({ error: 'Invalid PIN' });
+  if (!user) {
+    recordLoginFailure(ip);
+    return res.status(401).json({ error: 'Invalid PIN' });
+  }
+
+  clearLoginFailures(ip);
   res.json({ id: user.id, name: user.name, role: user.role });
 });
 
