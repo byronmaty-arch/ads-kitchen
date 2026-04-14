@@ -1,0 +1,27 @@
+[
+  {
+    "id": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "name": "Top Sellers",
+    "color": "#e74c3c"
+  },
+  {
+    "id": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "name": "Local Stews",
+    "color": "#f39c12"
+  },
+  {
+    "id": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "name": "Breakfast",
+    "color": "#9b59b6"
+  },
+  {
+    "id": "800b760e-bfdb-4714-a3ab-d3a2532807f7",
+    "name": "Drinks",
+    "color": "#3498db"
+  },
+  {
+    "id": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "name": "Curries",
+    "color": "#2ecc71"
+  }
+]

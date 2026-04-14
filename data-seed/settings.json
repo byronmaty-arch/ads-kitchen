@@ -1,0 +1,10 @@
+{
+  "restaurantName": "AD's Kitchen",
+  "location": "Kitooro, Entebbe",
+  "phone": "+256 784 313399",
+  "email": "adskitchen323@gmail.com",
+  "currency": "UGX",
+  "taxRate": 0,
+  "tables": 10,
+  "receiptFooter": "Thank you for dining at AD's Kitchen!\nKitooro, Entebbe | +256 784 313399"
+}

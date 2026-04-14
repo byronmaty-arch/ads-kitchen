@@ -1,0 +1,12 @@
+node_modules/
+data/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+*.docx
+dns-records.txt

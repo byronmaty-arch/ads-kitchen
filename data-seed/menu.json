@@ -1,0 +1,282 @@
+[
+  {
+    "id": "d35cfe7b-c007-437b-a964-4f79db9adfc6",
+    "name": "Chips Chicken + Mango Juice",
+    "category": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "price": 23000,
+    "cost": 10000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Chips with chicken, served with mango juice"
+  },
+  {
+    "id": "b250eedb-7132-4e9d-b61e-b068a8f6f733",
+    "name": "Chips Liver + Mango Juice",
+    "category": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "price": 30000,
+    "cost": 14000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Chips with liver, served with mango juice"
+  },
+  {
+    "id": "859daef6-14fd-457d-a60f-0df6310a327b",
+    "name": "Chips Goat + Mango Juice",
+    "category": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "price": 25000,
+    "cost": 12000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Chips with goat meat, served with mango juice"
+  },
+  {
+    "id": "3df51f40-a539-4fe1-aeb8-f93c60a405ce",
+    "name": "Chips Beef + Mango Juice",
+    "category": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "price": 20000,
+    "cost": 9000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Chips with beef, served with mango juice"
+  },
+  {
+    "id": "ac6a46c2-b068-46c2-a855-0696439474c7",
+    "name": "Chips Whole Fish",
+    "category": "55d32312-1864-48d1-ba2a-f8624d0c93d3",
+    "price": 40000,
+    "cost": 20000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Chips with whole fried fish"
+  },
+  {
+    "id": "4a9bab4b-3feb-4044-8a9f-e0041ab52130",
+    "name": "Beef Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 12000,
+    "cost": 5000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "9fb7ecba-a78c-470c-9b5e-fbd84f3bc6e3",
+    "name": "Chicken Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 15000,
+    "cost": 7000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "1cfc55c4-031c-45c8-979a-7ad54cca683d",
+    "name": "Fish Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 15000,
+    "cost": 7000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "0f2ca911-d014-4138-9951-fcbea5ae60bd",
+    "name": "G.Nuts Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 7000,
+    "cost": 3000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Groundnut stew, served with posho, rice, or matooke"
+  },
+  {
+    "id": "592ba8c9-e1f8-4dc6-87f1-c99d85ae3cc0",
+    "name": "Goat Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 18000,
+    "cost": 9000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "156c985e-3f1e-432a-bbca-f0be3abc7e27",
+    "name": "Offals Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 13000,
+    "cost": 6000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "99d222d1-281e-4121-9cf3-39340f8802d9",
+    "name": "Peas Stew",
+    "category": "87920e65-0f22-41dd-a715-6efedbef45ed",
+    "price": 8000,
+    "cost": 3500,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Served with posho, rice, or matooke"
+  },
+  {
+    "id": "2947c633-d63d-4fa5-9094-1b50d6f10a5f",
+    "name": "Katogo",
+    "category": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "price": 12000,
+    "cost": 5000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Traditional breakfast"
+  },
+  {
+    "id": "5a705840-1252-4bf8-8f71-2b24549b62aa",
+    "name": "Plain Chips",
+    "category": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "price": 10000,
+    "cost": 4000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "French fries"
+  },
+  {
+    "id": "e1264cdf-4089-4985-97a7-7c0333662e06",
+    "name": "Sausages",
+    "category": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "price": 7000,
+    "cost": 3000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Fried sausages"
+  },
+  {
+    "id": "a560833d-6bde-49c3-b596-0945a8df6f2a",
+    "name": "Omelette",
+    "category": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "price": 6000,
+    "cost": 2500,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Egg omelette"
+  },
+  {
+    "id": "e938e1fc-ea6a-4e27-b7db-388b0f710141",
+    "name": "Chapati",
+    "category": "2c4164be-3fca-4f91-aeb5-a0d59e8e65a8",
+    "price": 4000,
+    "cost": 1500,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Flatbread"
+  },
+  {
+    "id": "03a18715-4e5c-43fc-b834-c84340653596",
+    "name": "Juice (No Sugar)",
+    "category": "800b760e-bfdb-4714-a3ab-d3a2532807f7",
+    "price": 13000,
+    "cost": 5000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Natural juice, no added sugar"
+  },
+  {
+    "id": "e78f5db3-fa07-4622-9f8d-f8ec0f0bfb26",
+    "name": "Cocktail Juice",
+    "category": "800b760e-bfdb-4714-a3ab-d3a2532807f7",
+    "price": 13000,
+    "cost": 5000,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Mixed fruit cocktail"
+  },
+  {
+    "id": "4e00a3a3-0821-4b21-b917-517edae86fcf",
+    "name": "Mango Juice",
+    "category": "800b760e-bfdb-4714-a3ab-d3a2532807f7",
+    "price": 6500,
+    "cost": 2500,
+    "active": true,
+    "menuType": "walkin",
+    "description": "Fresh mango juice"
+  },
+  {
+    "id": "c57b2ac6-380d-47e0-b0da-928a1939f795",
+    "name": "Beans Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 5000,
+    "cost": 2000,
+    "active": true,
+    "menuType": "community",
+    "description": "Beans curry"
+  },
+  {
+    "id": "b11c6599-d219-4559-bd4e-84b61fac39e5",
+    "name": "Beef Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 5000,
+    "cost": 2500,
+    "active": true,
+    "menuType": "community",
+    "description": "Beef curry"
+  },
+  {
+    "id": "7c4d8263-3af3-4f9b-b3f5-fd8f201cccfd",
+    "name": "Peas Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 6000,
+    "cost": 2500,
+    "active": true,
+    "menuType": "community",
+    "description": "Peas curry"
+  },
+  {
+    "id": "c429aef1-9f59-4a17-af34-8b1fdf0dc6f4",
+    "name": "Chicken Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 12000,
+    "cost": 5500,
+    "active": true,
+    "menuType": "community",
+    "description": "Chicken curry"
+  },
+  {
+    "id": "0bc4915b-465f-417b-ba2f-2f2223b743cc",
+    "name": "Fish Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 7000,
+    "cost": 3500,
+    "active": true,
+    "menuType": "community",
+    "description": "Fish curry"
+  },
+  {
+    "id": "ec9c615d-e48a-47d7-a2bb-f68e70455ec2",
+    "name": "G.Nuts Curry",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 5000,
+    "cost": 2000,
+    "active": true,
+    "menuType": "community",
+    "description": "Groundnuts curry"
+  },
+  {
+    "id": "6f407d90-a201-4f89-bb72-0bd7f30c08a4",
+    "name": "Pasted Beef",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 6000,
+    "cost": 3000,
+    "active": true,
+    "menuType": "community",
+    "description": "Pasted beef curry"
+  },
+  {
+    "id": "0d69d3f6-56a3-4c7a-9f5e-9e2bda67cbb6",
+    "name": "Pasted Fish",
+    "category": "c04ed407-2784-40fb-b319-77ab91e4e896",
+    "price": 8000,
+    "cost": 4000,
+    "active": true,
+    "menuType": "community",
+    "description": "Pasted fish curry"
+  }
+]

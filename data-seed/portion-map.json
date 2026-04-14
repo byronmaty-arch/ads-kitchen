@@ -1,0 +1,67 @@
+[
+  {
+    "menuItemName": "Chicken Curry",
+    "stockItemName": "Chicken - Curry",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Beef Curry",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Fish Curry",
+    "stockItemName": "Fish",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Pasted Beef",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Pasted Fish",
+    "stockItemName": "Fish",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Chips Chicken + Mango Juice",
+    "stockItemName": "Chicken - Fast Food",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Chicken Stew",
+    "stockItemName": "Chicken - Curry",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Beef Stew",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Fish Stew",
+    "stockItemName": "Fish",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Goat Stew",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Chips Beef + Mango Juice",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Chips Whole Fish",
+    "stockItemName": "Fish",
+    "portionsUsed": 1
+  },
+  {
+    "menuItemName": "Chips Goat + Mango Juice",
+    "stockItemName": "Beef",
+    "portionsUsed": 1
+  }
+]

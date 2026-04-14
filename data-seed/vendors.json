@@ -1,0 +1,36 @@
+[
+  {
+    "id": "09d03920-2def-47b9-8656-d71ac2ddd82a",
+    "name": "Entebbe Fish Market",
+    "phone": "+256700000001",
+    "items": [
+      "Tilapia",
+      "Nile Perch"
+    ],
+    "rating": 4,
+    "notes": "Best fresh fish, delivers by 7am"
+  },
+  {
+    "id": "7b36e540-6785-4499-9061-f67e074198e1",
+    "name": "Kitooro Market Vendor",
+    "phone": "+256700000002",
+    "items": [
+      "Vegetables",
+      "Fruits",
+      "Matooke"
+    ],
+    "rating": 4,
+    "notes": "Daily fresh produce"
+  },
+  {
+    "id": "ee158268-0eee-484d-9b26-1e3e0c880bf3",
+    "name": "Mama Grace Poultry",
+    "phone": "+256700000003",
+    "items": [
+      "Chicken",
+      "Eggs"
+    ],
+    "rating": 5,
+    "notes": "Reliable, consistent quality"
+  }
+]

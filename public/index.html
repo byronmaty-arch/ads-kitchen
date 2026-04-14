@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#e74c3c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>AD's Kitchen Manager</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icons/logo.png">
+  <link rel="apple-touch-icon" href="/icons/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="login-logo">
+        <img src="/icons/logo.png" alt="AD's Kitchen" class="logo-img">
+      </div>
+      <div class="location">Kitooro, Entebbe</div>
+      <div class="pin-display">
+        <div class="pin-dots">
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+        </div>
+        <p class="pin-label">Enter your PIN</p>
+      </div>
+      <div class="pin-pad">
+        <button class="pin-btn" data-num="1">1</button>
+        <button class="pin-btn" data-num="2">2</button>
+        <button class="pin-btn" data-num="3">3</button>
+        <button class="pin-btn" data-num="4">4</button>
+        <button class="pin-btn" data-num="5">5</button>
+        <button class="pin-btn" data-num="6">6</button>
+        <button class="pin-btn" data-num="7">7</button>
+        <button class="pin-btn" data-num="8">8</button>
+        <button class="pin-btn" data-num="9">9</button>
+        <button class="pin-btn pin-btn-empty"></button>
+        <button class="pin-btn" data-num="0">0</button>
+        <button class="pin-btn pin-btn-del" id="pin-delete">
+          <span class="material-icons-round">backspace</span>
+        </button>
+      </div>
+      <p id="login-error" class="login-error"></p>
+      <div class="login-footer">AD's Kitchen &bull; Secure Access</div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <h2 id="page-title">Dashboard</h2>
+      </div>
+      <div class="top-bar-right">
+        <span id="staff-name" class="staff-badge"></span>
+        <button id="btn-logout" class="icon-btn" title="Logout">
+          <span class="material-icons-round">logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Container -->
+    <main id="page-container" class="page-container">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="page-dashboard" class="page active">
+        <div class="dashboard-grid">
+          <div class="stat-card stat-revenue">
+            <span class="material-icons-round">payments</span>
+            <div>
+              <p class="stat-label">Today's Revenue</p>
+              <p class="stat-value" id="dash-revenue">UGX 0</p>
+              <p class="stat-change" id="dash-revenue-change"></p>
+            </div>
+          </div>
+          <div class="stat-card stat-orders">
+            <span class="material-icons-round">receipt_long</span>
+            <div>
+              <p class="stat-label">Today's Orders</p>
+              <p class="stat-value" id="dash-orders">0</p>
+            </div>
+          </div>
+          <div class="stat-card stat-profit">
+            <span class="material-icons-round">trending_up</span>
+            <div>
+              <p class="stat-label">Today's Profit</p>
+              <p class="stat-value" id="dash-profit">UGX 0</p>
+            </div>
+          </div>
+          <div class="stat-card stat-active">
+            <span class="material-icons-round">pending_actions</span>
+            <div>
+              <p class="stat-label">Active Orders</p>
+              <p class="stat-value" id="dash-active">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="dash-alerts" class="dash-alerts hidden">
+          <h3><span class="material-icons-round">warning</span> Alerts</h3>
+          <div id="dash-alerts-list"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <h3>Quick Actions</h3>
+          <div class="quick-grid">
+            <button class="quick-btn" data-goto="orders"><span class="material-icons-round">add_shopping_cart</span>New Order</button>
+            <button class="quick-btn" data-goto="kitchen"><span class="material-icons-round">soup_kitchen</span>Kitchen</button>
+            <button class="quick-btn" data-goto="inventory"><span class="material-icons-round">inventory_2</span>Stock Check</button>
+            <button class="quick-btn" data-goto="reports"><span class="material-icons-round">assessment</span>Reports</button>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="section-card">
+          <h3>Recent Orders</h3>
+          <div id="dash-recent-orders" class="recent-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== ORDERS / POS ===== -->
+      <section id="page-orders" class="page">
+        <!-- Order Type Tabs -->
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="new-order">New Order</button>
+          <button class="sub-tab" data-subtab="order-list">All Orders</button>
+        </div>
+
+        <!-- New Order — Square POS Layout -->
+        <div id="subtab-new-order" class="subtab-content active">
+          <div class="pos-layout">
+            <!-- POS Top Bar -->
+            <div class="pos-topbar">
+              <div class="pos-topbar-left">
+                <div class="menu-type-toggle">
+                  <button class="menu-type-btn active" data-menu="walkin">Walk-in</button>
+                  <button class="menu-type-btn" data-menu="community">Community</button>
+                </div>
+              </div>
+              <div class="pos-topbar-center">
+                <select id="order-type" class="pos-control">
+                  <option value="dine_in">Dine In</option>
+                  <option value="takeaway">Takeaway</option>
+                </select>
+                <select id="order-table" class="pos-control">
+                  <option value="">No Table</option>
+                </select>
+              </div>
+              <div class="pos-topbar-right">
+                <span class="pos-waiter-badge" id="pos-waiter-name">
+                  <span class="material-icons-round">person</span>
+                  <span>Waiter</span>
+                </span>
+                <span class="pos-clock" id="pos-clock"></span>
+              </div>
+            </div>
+
+            <!-- POS Main Area: 3-column -->
+            <div class="pos-main">
+              <!-- Left: Categories sidebar -->
+              <div class="pos-categories" id="pos-categories">
+                <button class="pos-cat-btn active" data-cat="all">
+                  <span class="material-icons-round">restaurant_menu</span>
+                  <span>All Items</span>
+                </button>
+                <!-- dynamically populated -->
+              </div>
+
+              <!-- Center: Product Grid -->
+              <div class="pos-products">
+                <div class="pos-search-bar">
+                  <span class="material-icons-round">search</span>
+                  <input type="text" id="pos-search" class="pos-search-input" placeholder="Search menu items...">
+                </div>
+                <div id="menu-grid" class="pos-grid"></div>
+              </div>
+
+              <!-- Right: Order Panel -->
+              <div class="pos-order-panel">
+                <div class="pos-order-header">
+                  <h3>Current Order</h3>
+                  <button id="btn-clear-cart" class="pos-clear-btn">
+                    <span class="material-icons-round">delete_sweep</span>
+                  </button>
+                </div>
+                <div class="pos-customer-bar">
+                  <span class="material-icons-round">person_add</span>
+                  <input type="text" id="order-customer" class="pos-customer-input" placeholder="Customer name (optional)">
+                </div>
+                <div id="cart-items" class="pos-cart-items">
+                  <div class="pos-empty-cart">
+                    <span class="material-icons-round">add_shopping_cart</span>
+                    <p>Tap items to add</p>
+                  </div>
+                </div>
+                <div class="pos-order-footer">
+                  <div class="pos-order-summary">
+                    <div class="pos-summary-row">
+                      <span>Items</span><span id="cart-count">0</span>
+                    </div>
+                    <div class="pos-summary-row pos-total-row">
+                      <span>TOTAL</span><span id="cart-total">UGX 0</span>
+                    </div>
+                  </div>
+                  <div class="pos-action-bar">
+                    <button id="btn-send-kitchen" class="pos-send-btn" disabled>
+                      <span class="material-icons-round">send</span>
+                      Send to Kitchen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order List -->
+        <div id="subtab-order-list" class="subtab-content">
+          <div class="filter-bar">
+            <input type="date" id="orders-date-filter" class="input-sm">
+            <select id="orders-status-filter" class="input-sm">
+              <option value="">All Status</option>
+              <option value="new">New</option>
+              <option value="preparing">Preparing</option>
+              <option value="ready">Ready</option>
+              <option value="served">Served</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select id="orders-waiter-filter" class="input-sm">
+              <option value="">All Waiters</option>
+            </select>
+            <button id="btn-waiter-summary" class="btn btn-sm btn-outline" style="white-space:nowrap">
+              <span class="material-icons-round" style="font-size:16px;vertical-align:middle">summarize</span> Waiter Recon
+            </button>
+          </div>
+          <div id="waiter-recon-panel" class="waiter-recon-panel hidden"></div>
+          <div id="orders-list" class="orders-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== KITCHEN DISPLAY ===== -->
+      <section id="page-kitchen" class="page">
+        <div id="kitchen-orders" class="kitchen-grid"></div>
+        <div id="kitchen-empty" class="empty-state">
+          <span class="material-icons-round">soup_kitchen</span>
+          <p>No active orders</p>
+        </div>
+      </section>
+
+      <!-- ===== INVENTORY ===== -->
+      <section id="page-inventory" class="page">
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="stock-list">Stock</button>
+          <button class="sub-tab" data-subtab="stock-log">Log</button>
+        </div>
+
+        <div id="subtab-stock-list" class="subtab-content active">
+          <div class="filter-bar">
+            <input type="text" id="inv-search" class="input-sm" placeholder="Search items...">
+            <button id="btn-add-inventory" class="btn btn-sm btn-primary">
+              <span class="material-icons-round">add</span> Add
+            </button>
+          </div>
+          <div id="inventory-list" class="inventory-list"></div>
+        </div>
+
+        <div id="subtab-stock-log" class="subtab-content">
+          <div id="stock-log-list" class="log-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== MENU MANAGEMENT ===== -->
+      <section id="page-menu" class="page">
+        <div class="filter-bar">
+          <input type="text" id="menu-search" class="input-sm" placeholder="Search menu...">
+          <button id="btn-add-menu" class="btn btn-sm btn-primary">
+            <span class="material-icons-round">add</span> Add Item
+          </button>
+        </div>
+        <div id="menu-manage-list" class="menu-manage-list"></div>
+      </section>
+
+      <!-- ===== PROCUREMENT / VENDORS ===== -->
+      <section id="page-procurement" class="page">
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="vendors-list">Vendors</button>
+          <button class="sub-tab" data-subtab="purchases-list">Purchase Orders</button>
+          <button class="sub-tab" data-subtab="payables-tab">Payables</button>
+        </div>
+
+        <div id="subtab-vendors-list" class="subtab-content active">
+          <div class="filter-bar">
+            <button id="btn-add-vendor" class="btn btn-sm btn-primary">
+              <span class="material-icons-round">add</span> Add Vendor
+            </button>
+          </div>
+          <div id="vendors-list" class="vendors-list"></div>
+        </div>
+
+        <div id="subtab-purchases-list" class="subtab-content">
+          <div class="filter-bar">
+            <select id="po-status-filter" class="input-sm">
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="received">Received</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button id="btn-add-po" class="btn btn-sm btn-primary">
+              <span class="material-icons-round">add</span> New PO
+            </button>
+          </div>
+          <div id="purchases-list" class="purchases-list"></div>
+        </div>
+
+        <div id="subtab-payables-tab" class="subtab-content">
+          <div id="payables-content"></div>
+        </div>
+      </section>
+
+      <!-- ===== EXPENSES ===== -->
+      <section id="page-expenses" class="page">
+        <div class="filter-bar">
+          <input type="date" id="expense-date-filter" class="input-sm">
+          <button id="btn-add-expense" class="btn btn-sm btn-primary">
+            <span class="material-icons-round">add</span> Add Expense
+          </button>
+        </div>
+        <div id="expenses-list" class="expenses-list"></div>
+        <div class="expense-total-bar">
+          <span>Total</span>
+          <span id="expense-total">UGX 0</span>
+        </div>
+      </section>
+
+      <!-- ===== CUSTOMERS ===== -->
+      <section id="page-customers" class="page">
+        <div class="filter-bar">
+          <input type="text" id="customer-search" class="input-sm" placeholder="Search customers...">
+          <button id="btn-add-customer" class="btn btn-sm btn-primary">
+            <span class="material-icons-round">add</span> Add
+          </button>
+        </div>
+        <div id="customers-list" class="customers-list"></div>
+      </section>
+
+      <!-- ===== REPORTS ===== -->
+      <section id="page-reports" class="page">
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="daily-report">Daily</button>
+          <button class="sub-tab" data-subtab="range-report">Period</button>
+          <button class="sub-tab" data-subtab="receivables-tab">Receivables</button>
+          <button class="sub-tab" data-subtab="reconciliation">Cash Recon</button>
+        </div>
+
+        <div id="subtab-daily-report" class="subtab-content active">
+          <div class="filter-bar">
+            <input type="date" id="report-date" class="input-sm">
+            <button id="btn-load-daily" class="btn btn-sm btn-primary">Load</button>
+          </div>
+          <div id="daily-report-content" class="report-content"></div>
+        </div>
+
+        <div id="subtab-range-report" class="subtab-content">
+          <div class="filter-bar" style="flex-wrap:wrap;gap:6px">
+            <button class="btn btn-sm btn-outline quick-range" data-range="today">Today</button>
+            <button class="btn btn-sm btn-outline quick-range" data-range="7d">Last 7d</button>
+            <button class="btn btn-sm btn-outline quick-range" data-range="30d">Last 30d</button>
+            <button class="btn btn-sm btn-outline quick-range" data-range="this-month">This Month</button>
+            <button class="btn btn-sm btn-outline quick-range" data-range="last-month">Last Month</button>
+            <button class="btn btn-sm btn-outline quick-range" data-range="ytd">YTD</button>
+          </div>
+          <div class="filter-bar">
+            <input type="date" id="report-from" class="input-sm" placeholder="From">
+            <input type="date" id="report-to" class="input-sm" placeholder="To">
+            <button id="btn-load-range" class="btn btn-sm btn-primary">Load</button>
+          </div>
+          <div id="range-report-content" class="report-content"></div>
+        </div>
+
+        <div id="subtab-receivables-tab" class="subtab-content">
+          <div id="receivables-content" class="report-content"></div>
+        </div>
+
+        <div id="subtab-reconciliation" class="subtab-content">
+          <div class="filter-bar">
+            <input type="date" id="recon-date" class="input-sm">
+            <button id="btn-load-recon" class="btn btn-sm btn-primary">Load</button>
+          </div>
+          <div id="recon-content" class="report-content"></div>
+        </div>
+      </section>
+
+      <!-- ===== STAFF ===== -->
+      <section id="page-staff" class="page">
+        <div class="filter-bar">
+          <button id="btn-add-staff" class="btn btn-sm btn-primary">
+            <span class="material-icons-round">add</span> Add Staff
+          </button>
+        </div>
+        <div id="staff-list" class="staff-list"></div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section id="page-settings" class="page">
+        <div class="settings-form">
+          <div class="form-group">
+            <label>Restaurant Name</label>
+            <input type="text" id="set-name" class="input">
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <input type="text" id="set-location" class="input">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="set-phone" class="input">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="set-email" class="input">
+          </div>
+          <div class="form-group">
+            <label>Number of Tables</label>
+            <input type="number" id="set-tables" class="input">
+          </div>
+          <div class="form-group">
+            <label>Receipt Footer</label>
+            <textarea id="set-receipt" class="input" rows="3"></textarea>
+          </div>
+          <button id="btn-save-settings" class="btn btn-primary btn-block">Save Settings</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="dashboard">
+        <span class="material-icons-round">dashboard</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-page="orders">
+        <span class="material-icons-round">point_of_sale</span>
+        <span>Orders</span>
+      </button>
+      <button class="nav-btn" data-page="kitchen">
+        <span class="material-icons-round">soup_kitchen</span>
+        <span>Kitchen</span>
+      </button>
+      <button class="nav-btn" data-page="inventory">
+        <span class="material-icons-round">inventory_2</span>
+        <span>Stock</span>
+      </button>
+      <button class="nav-btn nav-more" id="nav-more-btn">
+        <span class="material-icons-round">menu</span>
+        <span>More</span>
+      </button>
+    </nav>
+
+    <!-- More Menu Drawer -->
+    <div id="more-drawer" class="more-drawer hidden">
+      <div class="drawer-overlay"></div>
+      <div class="drawer-content">
+        <div class="drawer-header">
+          <h3>More</h3>
+          <button class="icon-btn drawer-close"><span class="material-icons-round">close</span></button>
+        </div>
+        <div class="drawer-menu">
+          <button class="drawer-item" data-page="menu"><span class="material-icons-round">restaurant_menu</span>Menu Management</button>
+          <button class="drawer-item" data-page="procurement"><span class="material-icons-round">local_shipping</span>Procurement & Vendors</button>
+          <button class="drawer-item" data-page="expenses"><span class="material-icons-round">account_balance_wallet</span>Expenses</button>
+          <button class="drawer-item" data-page="customers"><span class="material-icons-round">people</span>Customers</button>
+          <button class="drawer-item" data-page="reports"><span class="material-icons-round">assessment</span>Reports & Analytics</button>
+          <button class="drawer-item" data-page="staff"><span class="material-icons-round">badge</span>Staff</button>
+          <button class="drawer-item" data-page="settings"><span class="material-icons-round">settings</span>Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title"></h3>
+          <button class="icon-btn modal-close"><span class="material-icons-round">close</span></button>
+        </div>
+        <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

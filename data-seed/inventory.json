@@ -1,0 +1,163 @@
+[
+  {
+    "id": "0adf42de-fe1e-4074-b5a4-66af4f5ee4e3",
+    "name": "Chicken - Curry",
+    "unit": "pc",
+    "quantity": 20,
+    "reorderLevel": 5,
+    "costPerUnit": 25000,
+    "standardPortions": 6,
+    "costPerPortion": 4167,
+    "category": "Proteins"
+  },
+  {
+    "id": "995825a0-5fae-43e2-aa9e-c865600af466",
+    "name": "Chicken - Fast Food",
+    "unit": "pc",
+    "quantity": 15,
+    "reorderLevel": 5,
+    "costPerUnit": 14000,
+    "standardPortions": 4,
+    "costPerPortion": 3500,
+    "category": "Proteins"
+  },
+  {
+    "id": "80264ce9-5947-49b4-a86f-c9e642216ab2",
+    "name": "Beef",
+    "unit": "kg",
+    "quantity": 20,
+    "reorderLevel": 5,
+    "costPerUnit": 18000,
+    "standardPortions": 10,
+    "costPerPortion": 1800,
+    "category": "Proteins"
+  },
+  {
+    "id": "b1b0b164-270c-45f0-af3a-a87b92826ab4",
+    "name": "Fish",
+    "unit": "pc",
+    "quantity": 15,
+    "reorderLevel": 5,
+    "costPerUnit": 15000,
+    "standardPortions": 4,
+    "costPerPortion": 3750,
+    "category": "Proteins"
+  },
+  {
+    "id": "0a76b733-783d-4fcf-8b27-19c1db372e44",
+    "name": "Groundnuts (kg)",
+    "unit": "kg",
+    "quantity": 10,
+    "reorderLevel": 3,
+    "costPerUnit": 8000,
+    "category": "Dry Goods"
+  },
+  {
+    "id": "689686d6-244e-4ba5-9cd9-9ec453438bfc",
+    "name": "Matooke (bunch)",
+    "unit": "bunch",
+    "quantity": 9,
+    "reorderLevel": 3,
+    "costPerUnit": 10000,
+    "category": "Fresh Produce"
+  },
+  {
+    "id": "81ed7124-75ae-4c14-a1cc-e28d54592057",
+    "name": "Rice (kg)",
+    "unit": "kg",
+    "quantity": 25,
+    "reorderLevel": 10,
+    "costPerUnit": 4000,
+    "category": "Dry Goods"
+  },
+  {
+    "id": "24516ab5-55f5-43d1-a876-597e381e80a1",
+    "name": "Maize Flour (kg)",
+    "unit": "kg",
+    "quantity": 20,
+    "reorderLevel": 5,
+    "costPerUnit": 3000,
+    "category": "Dry Goods"
+  },
+  {
+    "id": "9ce369b3-2971-4825-9a8f-1d86d2c74d84",
+    "name": "Cooking Oil (L)",
+    "unit": "liters",
+    "quantity": 15,
+    "reorderLevel": 5,
+    "costPerUnit": 7000,
+    "category": "Cooking Essentials"
+  },
+  {
+    "id": "270e513c-6462-4482-85fa-b7dde15d2c7f",
+    "name": "Onions (kg)",
+    "unit": "kg",
+    "quantity": 10,
+    "reorderLevel": 3,
+    "costPerUnit": 4000,
+    "category": "Fresh Produce"
+  },
+  {
+    "id": "f41eb405-4f07-44cc-b389-872cd9e335c1",
+    "name": "Tomatoes (kg)",
+    "unit": "kg",
+    "quantity": 8,
+    "reorderLevel": 3,
+    "costPerUnit": 5000,
+    "category": "Fresh Produce"
+  },
+  {
+    "id": "9bb06b44-ff93-4e3d-aa66-9c4588a5cadb",
+    "name": "Eggs (tray)",
+    "unit": "tray",
+    "quantity": 5,
+    "reorderLevel": 2,
+    "costPerUnit": 12000,
+    "category": "Proteins"
+  },
+  {
+    "id": "2b3d62fd-4d9d-4ff4-aa9f-69dfdbb71342",
+    "name": "Passion Fruits (kg)",
+    "unit": "kg",
+    "quantity": 5,
+    "reorderLevel": 2,
+    "costPerUnit": 6000,
+    "category": "Fresh Produce"
+  },
+  {
+    "id": "5362b9b2-e32a-4e56-a4f5-5d2fd12cc7d7",
+    "name": "Sugar (kg)",
+    "unit": "kg",
+    "quantity": 10,
+    "reorderLevel": 3,
+    "costPerUnit": 4000,
+    "category": "Dry Goods"
+  },
+  {
+    "id": "11d7d68b-c159-42da-8ea5-b27a4d249f0d",
+    "name": "Milk (L)",
+    "unit": "liters",
+    "quantity": 10,
+    "reorderLevel": 3,
+    "costPerUnit": 3000,
+    "category": "Dairy"
+  },
+  {
+    "id": "b87fc490-d79b-4b41-bf46-41e51c0d4728",
+    "name": "Wheat Flour (kg)",
+    "unit": "kg",
+    "quantity": 15,
+    "reorderLevel": 5,
+    "costPerUnit": 4000,
+    "category": "Dry Goods"
+  },
+  {
+    "id": "da39298a-81de-447b-bd7d-72dbcdddb0ae",
+    "name": "Fish",
+    "unit": "pcs",
+    "category": "Curries",
+    "quantity": 1,
+    "reorderLevel": 1,
+    "costPerUnit": 15000
+  }
+]
