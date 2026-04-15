@@ -557,6 +557,18 @@
     });
 
     $('#btn-send-kitchen').addEventListener('click', sendToKitchen);
+
+    // Mobile: tap the order header (drag handle area) to expand/collapse the bottom sheet.
+    // On desktop/tablet the .expanded class is ignored because the sheet isn't fixed.
+    const orderCol = $('#pos-col-order');
+    const orderHeader = $('#pos-order-header');
+    if (orderHeader && orderCol) {
+      orderHeader.addEventListener('click', (e) => {
+        // Don't toggle when tapping the clear button inside the header
+        if (e.target.closest('#btn-clear-cart')) return;
+        orderCol.classList.toggle('expanded');
+      });
+    }
   }
 
   async function sendToKitchen() {

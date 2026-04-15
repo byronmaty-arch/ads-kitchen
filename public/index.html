@@ -137,18 +137,19 @@
           <button class="sub-tab" data-subtab="order-list">All Orders</button>
         </div>
 
-        <!-- New Order — Square POS Layout -->
+        <!-- New Order — 3-column POS Layout -->
         <div id="subtab-new-order" class="subtab-content active">
           <div class="pos-layout">
-            <!-- POS Top Bar -->
-            <div class="pos-topbar">
-              <div class="pos-topbar-left">
+            <!-- ===== COLUMN 1: Controls (menu type, order type, customer, categories, search) ===== -->
+            <aside class="pos-col pos-col-controls">
+              <div class="pos-ctl-header">
                 <div class="menu-type-toggle">
                   <button class="menu-type-btn active" data-menu="walkin">Walk-in</button>
                   <button class="menu-type-btn" data-menu="community">Community</button>
                 </div>
+                <span class="pos-clock" id="pos-clock"></span>
               </div>
-              <div class="pos-topbar-center">
+              <div class="pos-ctl-row">
                 <select id="order-type" class="pos-control">
                   <option value="dine_in">Dine In</option>
                   <option value="takeaway">Takeaway</option>
@@ -157,18 +158,20 @@
                   <option value="">No Table</option>
                 </select>
               </div>
-              <div class="pos-topbar-right">
+              <div class="pos-ctl-row pos-ctl-waiter">
                 <span class="pos-waiter-badge" id="pos-waiter-name">
                   <span class="material-icons-round">person</span>
                   <span>Waiter</span>
                 </span>
-                <span class="pos-clock" id="pos-clock"></span>
               </div>
-            </div>
-
-            <!-- POS Main Area: 3-column -->
-            <div class="pos-main">
-              <!-- Left: Categories sidebar -->
+              <div class="pos-customer-bar">
+                <span class="material-icons-round">person_add</span>
+                <input type="text" id="order-customer" class="pos-customer-input" placeholder="Customer name (optional)">
+              </div>
+              <div class="pos-search-bar">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="pos-search" class="pos-search-input" placeholder="Search menu items...">
+              </div>
               <div class="pos-categories" id="pos-categories">
                 <button class="pos-cat-btn active" data-cat="all">
                   <span class="material-icons-round">restaurant_menu</span>
@@ -176,52 +179,44 @@
                 </button>
                 <!-- dynamically populated -->
               </div>
+            </aside>
 
-              <!-- Center: Product Grid -->
-              <div class="pos-products">
-                <div class="pos-search-bar">
-                  <span class="material-icons-round">search</span>
-                  <input type="text" id="pos-search" class="pos-search-input" placeholder="Search menu items...">
-                </div>
-                <div id="menu-grid" class="pos-grid"></div>
+            <!-- ===== COLUMN 2: Menu Grid ===== -->
+            <main class="pos-col pos-col-menu">
+              <div id="menu-grid" class="pos-grid"></div>
+            </main>
+
+            <!-- ===== COLUMN 3: Current Order + Send ===== -->
+            <section class="pos-col pos-col-order" id="pos-col-order">
+              <div class="pos-order-header" id="pos-order-header">
+                <h3>Current Order</h3>
+                <button id="btn-clear-cart" class="pos-clear-btn" aria-label="Clear order">
+                  <span class="material-icons-round">delete_sweep</span>
+                </button>
               </div>
-
-              <!-- Right: Order Panel -->
-              <div class="pos-order-panel">
-                <div class="pos-order-header">
-                  <h3>Current Order</h3>
-                  <button id="btn-clear-cart" class="pos-clear-btn">
-                    <span class="material-icons-round">delete_sweep</span>
+              <div id="cart-items" class="pos-cart-items">
+                <div class="pos-empty-cart">
+                  <span class="material-icons-round">add_shopping_cart</span>
+                  <p>Tap items to add</p>
+                </div>
+              </div>
+              <div class="pos-order-footer">
+                <div class="pos-order-summary">
+                  <div class="pos-summary-row">
+                    <span>Items</span><span id="cart-count">0</span>
+                  </div>
+                  <div class="pos-summary-row pos-total-row">
+                    <span>TOTAL</span><span id="cart-total">UGX 0</span>
+                  </div>
+                </div>
+                <div class="pos-action-bar">
+                  <button id="btn-send-kitchen" class="pos-send-btn" disabled>
+                    <span class="material-icons-round">send</span>
+                    Send to Kitchen
                   </button>
                 </div>
-                <div class="pos-customer-bar">
-                  <span class="material-icons-round">person_add</span>
-                  <input type="text" id="order-customer" class="pos-customer-input" placeholder="Customer name (optional)">
-                </div>
-                <div id="cart-items" class="pos-cart-items">
-                  <div class="pos-empty-cart">
-                    <span class="material-icons-round">add_shopping_cart</span>
-                    <p>Tap items to add</p>
-                  </div>
-                </div>
-                <div class="pos-order-footer">
-                  <div class="pos-order-summary">
-                    <div class="pos-summary-row">
-                      <span>Items</span><span id="cart-count">0</span>
-                    </div>
-                    <div class="pos-summary-row pos-total-row">
-                      <span>TOTAL</span><span id="cart-total">UGX 0</span>
-                    </div>
-                  </div>
-                  <div class="pos-action-bar">
-                    <button id="btn-send-kitchen" class="pos-send-btn" disabled>
-                      <span class="material-icons-round">send</span>
-                      Send to Kitchen
-                    </button>
-                  </div>
-                </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
