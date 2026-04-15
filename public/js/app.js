@@ -487,17 +487,105 @@
     });
   }
 
+  // --- Accompaniments (Local Stews + Community menu items) ---
+  const ACCOMPANIMENTS = ['Matooke', 'Rice', 'Posho', 'Cassava', 'Yams', 'Pumpkin', 'Greens'];
+  const MAX_ACCOMPANIMENTS = 5;
+
+  function itemNeedsAccompaniments(item) {
+    // Community menu: every item needs accompaniments
+    if (currentMenuType === 'community') return true;
+    // Walk-in menu: only "Local Stews" category
+    const cat = categories.find(c => c.id === item.category);
+    return !!(cat && cat.name === 'Local Stews');
+  }
+
+  function cartLineSignature(menuId, accompaniments, notes) {
+    const accKey = (accompaniments || []).slice().sort().join(',');
+    return `${menuId}|${accKey}|${(notes || '').trim()}`;
+  }
+
   function addToCart(menuId) {
     const item = menuItems.find(m => m.id === menuId);
     if (!item) return;
-    const existing = cart.find(c => c.menuId === menuId);
+    if (itemNeedsAccompaniments(item)) {
+      openAccompanimentsModal(item, (acc, notes) => addCartLine(item, acc, notes));
+    } else {
+      addCartLine(item, [], '');
+    }
+  }
+
+  function addCartLine(item, accompaniments, notes) {
+    const sig = cartLineSignature(item.id, accompaniments, notes);
+    const existing = cart.find(c => cartLineSignature(c.menuId, c.accompaniments, c.notes) === sig);
     if (existing) {
       existing.quantity++;
     } else {
-      cart.push({ menuId, name: item.name, price: item.price, quantity: 1 });
+      cart.push({
+        menuId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        accompaniments: accompaniments || [],
+        notes: notes || ''
+      });
     }
     renderCart();
-    renderMenuGrid(); // refresh to show qty badges
+    renderMenuGrid();
+  }
+
+  function openAccompanimentsModal(item, onConfirm) {
+    const html = `
+      <div class="accomp-intro">
+        <div class="accomp-item-name">${item.name}</div>
+        <div class="accomp-hint">Tick up to ${MAX_ACCOMPANIMENTS} sides the customer wants</div>
+      </div>
+      <div class="accomp-grid" id="accomp-grid">
+        ${ACCOMPANIMENTS.map(a => `
+          <label class="accomp-chip">
+            <input type="checkbox" value="${a}">
+            <span>${a}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div class="accomp-notes">
+        <label class="accomp-notes-label" for="accomp-notes-input">
+          <span class="material-icons-round">sticky_note_2</span>
+          Notes for chef (optional)
+        </label>
+        <textarea id="accomp-notes-input" class="accomp-notes-input" rows="2"
+          placeholder="e.g. extra spicy, no onions, well done, no salt..."></textarea>
+      </div>
+      <div class="accomp-actions">
+        <button type="button" class="btn btn-outline" id="accomp-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="accomp-confirm">
+          <span class="material-icons-round">add_shopping_cart</span>
+          Add to Order
+        </button>
+      </div>
+    `;
+    openModal(`${item.name}`, html);
+
+    const grid = $('#accomp-grid');
+    // Enforce max-5 selection and apply visual states
+    function refreshChipStates() {
+      const checked = $$('input[type=checkbox]:checked', grid);
+      const atMax = checked.length >= MAX_ACCOMPANIMENTS;
+      $$('input[type=checkbox]', grid).forEach(cb => {
+        const chip = cb.closest('.accomp-chip');
+        cb.disabled = !cb.checked && atMax;
+        chip.classList.toggle('is-checked', cb.checked);
+        chip.classList.toggle('is-disabled', !cb.checked && atMax);
+      });
+    }
+    grid.addEventListener('change', refreshChipStates);
+
+    $('#accomp-cancel').addEventListener('click', closeModal);
+    $('#accomp-confirm').addEventListener('click', () => {
+      const selected = $$('input[type=checkbox]:checked', grid).map(cb => cb.value);
+      const notes = ($('#accomp-notes-input').value || '').trim();
+      closeModal();
+      onConfirm(selected, notes);
+    });
   }
 
   function renderCart() {
@@ -519,20 +607,31 @@
     const itemCount = cart.reduce((s, c) => s + c.quantity, 0);
     $('#cart-count').textContent = itemCount;
     $('#cart-total').textContent = fmt(total);
-    $('#cart-items').innerHTML = cart.map((c, i) => `
-      <div class="cart-item">
-        <div class="cart-item-info">
-          <div class="cart-item-name">${c.name}</div>
-          <div class="cart-item-price">${fmt(c.price)}</div>
+    $('#cart-items').innerHTML = cart.map((c, i) => {
+      const accChips = (c.accompaniments && c.accompaniments.length)
+        ? `<div class="cart-item-accomp">${c.accompaniments.map(a => `<span class="cart-chip">${a}</span>`).join('')}</div>`
+        : '';
+      const notesHtml = c.notes
+        ? `<div class="cart-item-notes"><span class="material-icons-round">sticky_note_2</span>${c.notes}</div>`
+        : '';
+      const isComplex = accChips || notesHtml;
+      return `
+        <div class="cart-item ${isComplex ? 'cart-item-complex' : ''}">
+          <div class="cart-item-info">
+            <div class="cart-item-name">${c.name}</div>
+            <div class="cart-item-price">${fmt(c.price)}</div>
+            ${accChips}
+            ${notesHtml}
+          </div>
+          <div class="cart-qty-controls">
+            <button class="qty-btn" data-idx="${i}" data-act="dec">−</button>
+            <span class="cart-qty">${c.quantity}</span>
+            <button class="qty-btn" data-idx="${i}" data-act="inc">+</button>
+          </div>
+          <div class="cart-item-total">${fmt(c.price * c.quantity)}</div>
         </div>
-        <div class="cart-qty-controls">
-          <button class="qty-btn" data-idx="${i}" data-act="dec">−</button>
-          <span class="cart-qty">${c.quantity}</span>
-          <button class="qty-btn" data-idx="${i}" data-act="inc">+</button>
-        </div>
-        <div class="cart-item-total">${fmt(c.price * c.quantity)}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function initCartEvents() {
@@ -579,7 +678,14 @@
       menuType: currentMenuType,
       table: $('#order-table').value || null,
       customerName: $('#order-customer').value || null,
-      items: cart.map(c => ({ menuId: c.menuId, name: c.name, price: c.price, quantity: c.quantity })),
+      items: cart.map(c => ({
+        menuId: c.menuId,
+        name: c.name,
+        price: c.price,
+        quantity: c.quantity,
+        accompaniments: c.accompaniments || [],
+        notes: c.notes || ''
+      })),
       total,
       staffId: currentUser.id,
       staffName: currentUser.name
@@ -1163,12 +1269,24 @@
             </div>
           </div>
           <div class="kitchen-items">
-            ${(o.items || []).map(i => `
-              <div class="kitchen-item">
-                <span class="kitchen-item-qty">${i.quantity}x</span>
-                <span style="flex:1">${i.name}</span>
-              </div>
-            `).join('')}
+            ${(o.items || []).map(i => {
+              const acc = (i.accompaniments && i.accompaniments.length)
+                ? `<div class="kitchen-item-accomp">${i.accompaniments.map(a => `<span class="kitchen-chip">${a}</span>`).join('')}</div>`
+                : '';
+              const notes = i.notes
+                ? `<div class="kitchen-item-notes"><span class="material-icons-round">sticky_note_2</span>${i.notes}</div>`
+                : '';
+              return `
+                <div class="kitchen-item ${(acc || notes) ? 'kitchen-item-complex' : ''}">
+                  <span class="kitchen-item-qty">${i.quantity}x</span>
+                  <div class="kitchen-item-body">
+                    <div class="kitchen-item-name">${i.name}</div>
+                    ${acc}
+                    ${notes}
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
           ${o.customerName ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Customer: ${o.customerName}</div>` : ''}
           <div class="kitchen-actions">
