@@ -9,10 +9,16 @@
   <title>AD's Kitchen Manager</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/icons/logo.png">
-  <link rel="apple-touch-icon" href="/icons/logo.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <!-- Preload critical assets so they start downloading before the CSS parses -->
+  <link rel="preload" href="/icons/logo.png" as="image">
+  <link rel="preload" href="/css/style.css" as="style">
+  <link rel="preload" href="/js/app.js" as="script">
+  <!-- Fonts: preconnect both hosts and use display=swap so text renders immediately -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>

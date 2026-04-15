@@ -47,7 +47,25 @@ app.use('/api/public', (req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static assets with aggressive HTTP caching to avoid re-downloading
+// CSS/JS/icons on every visit. index.html stays uncached so HTML updates
+// propagate instantly; the service worker handles offline + runtime cache.
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: true,
+  lastModified: true,
+  maxAge: '7d',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(png|jpe?g|svg|webp|ico|woff2?|ttf)$/i.test(filePath)) {
+      // Images + fonts rarely change — 30 days
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    } else if (/\.(css|js)$/i.test(filePath)) {
+      // CSS/JS change often; browsers still revalidate via ETag
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    }
+  }
+}));
 
 // --- JSON File Storage Helpers ---
 function readData(file) {
