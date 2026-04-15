@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -68,6 +69,68 @@ function readConfig(file) {
 function writeConfig(file, data) {
   fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2));
 }
+
+// --- PIN HASHING ---
+// Uses built-in crypto.scrypt (no new deps). Stored format:
+//   scrypt$<salt_b64>$<hash_b64>
+// Plaintext PINs from existing installs are accepted once, then rewritten
+// as hashes (lazy migration on login + eager migration on boot) so backups
+// never contain plaintext PINs.
+const PIN_HASH_PREFIX = 'scrypt$';
+const PIN_HASH_KEYLEN = 64;
+const PIN_HASH_SALT_BYTES = 16;
+
+function hashPin(pin) {
+  const salt = crypto.randomBytes(PIN_HASH_SALT_BYTES);
+  const hash = crypto.scryptSync(String(pin), salt, PIN_HASH_KEYLEN);
+  return `${PIN_HASH_PREFIX}${salt.toString('base64')}$${hash.toString('base64')}`;
+}
+
+function isHashedPin(stored) {
+  return typeof stored === 'string' && stored.startsWith(PIN_HASH_PREFIX);
+}
+
+function verifyPin(pin, stored) {
+  if (stored == null) return false;
+  if (!isHashedPin(stored)) {
+    // Legacy plaintext — constant-ish compare, migration happens on login.
+    return String(pin) === String(stored);
+  }
+  try {
+    const parts = stored.split('$');
+    if (parts.length !== 3) return false;
+    const salt = Buffer.from(parts[1], 'base64');
+    const expected = Buffer.from(parts[2], 'base64');
+    const actual = crypto.scryptSync(String(pin), salt, expected.length);
+    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+  } catch (e) {
+    console.error('[pin-verify] failed:', e.message);
+    return false;
+  }
+}
+
+// Eager boot migration: hash any plaintext PINs so the very next backup is clean.
+function migrateStaffPinsIfNeeded() {
+  try {
+    const fp = path.join(DATA_DIR, 'staff.json');
+    if (!fs.existsSync(fp)) return;
+    const staff = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    let changed = 0;
+    for (const s of staff) {
+      if (s.pin && !isHashedPin(s.pin)) {
+        s.pin = hashPin(s.pin);
+        changed++;
+      }
+    }
+    if (changed > 0) {
+      fs.writeFileSync(fp, JSON.stringify(staff, null, 2));
+      console.log(`[pin-migrate] Hashed ${changed} plaintext PIN(s) in staff.json`);
+    }
+  } catch (e) {
+    console.error('[pin-migrate] failed:', e);
+  }
+}
+migrateStaffPinsIfNeeded();
 
 // --- Seed default data if empty ---
 function seedDefaults() {
@@ -281,10 +344,17 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const staff = readData('staff.json');
-  const user = staff.find(s => s.pin === pin && s.active);
+  const user = staff.find(s => s.active && verifyPin(pin, s.pin));
   if (!user) {
     recordLoginFailure(ip);
     return res.status(401).json({ error: 'Invalid PIN' });
+  }
+
+  // Lazy migration: if this user's PIN is still plaintext, hash it now.
+  if (!isHashedPin(user.pin)) {
+    user.pin = hashPin(pin);
+    writeData('staff.json', staff);
+    console.log(`[pin-migrate] Hashed PIN on login for ${user.name}`);
   }
 
   clearLoginFailures(ip);
@@ -865,6 +935,9 @@ app.get('/api/staff', (req, res) => {
 app.post('/api/staff', (req, res) => {
   const staff = readData('staff.json');
   const member = { id: uuidv4(), active: true, ...req.body };
+  if (member.pin && !isHashedPin(member.pin)) {
+    member.pin = hashPin(member.pin);
+  }
   staff.push(member);
   writeData('staff.json', staff);
   res.status(201).json({ ...member, pin: '****' });
@@ -874,7 +947,15 @@ app.put('/api/staff/:id', (req, res) => {
   const staff = readData('staff.json');
   const idx = staff.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  staff[idx] = { ...staff[idx], ...req.body };
+  const patch = { ...req.body };
+  // Only hash if a new PIN is being set (and it's not already hashed).
+  // Empty string / missing means "leave existing PIN alone".
+  if (patch.pin === '' || patch.pin == null) {
+    delete patch.pin;
+  } else if (!isHashedPin(patch.pin)) {
+    patch.pin = hashPin(patch.pin);
+  }
+  staff[idx] = { ...staff[idx], ...patch };
   writeData('staff.json', staff);
   res.json({ ...staff[idx], pin: '****' });
 });
