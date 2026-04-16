@@ -361,6 +361,7 @@
           <button class="sub-tab active" data-subtab="daily-report">Daily</button>
           <button class="sub-tab" data-subtab="range-report">Period</button>
           <button class="sub-tab" data-subtab="receivables-tab">Receivables</button>
+          <button class="sub-tab" data-subtab="balance-sheet-tab">Balance Sheet</button>
           <button class="sub-tab" data-subtab="reconciliation">Cash Recon</button>
         </div>
 
@@ -391,6 +392,14 @@
 
         <div id="subtab-receivables-tab" class="subtab-content">
           <div id="receivables-content" class="report-content"></div>
+        </div>
+
+        <div id="subtab-balance-sheet-tab" class="subtab-content">
+          <div class="filter-bar">
+            <input type="date" id="balance-sheet-date" class="input-sm">
+            <button id="btn-load-balance-sheet" class="btn btn-sm btn-primary">Load</button>
+          </div>
+          <div id="balance-sheet-content" class="report-content"></div>
         </div>
 
         <div id="subtab-reconciliation" class="subtab-content">

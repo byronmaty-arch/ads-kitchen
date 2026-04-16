@@ -2023,15 +2023,17 @@
   async function loadReports() {
     const reportDate = $('#report-date');
     const reconDate = $('#recon-date');
+    const bsDate = $('#balance-sheet-date');
     if (!reportDate.value) reportDate.value = today();
     if (!reconDate.value) reconDate.value = today();
+    if (!bsDate.value) bsDate.value = today();
 
     // Non-admin: hide Daily and Period tabs, show only Cash Recon
     const reportTabs = $('#page-reports .sub-tabs');
     if (!isAdmin()) {
       // Hide Daily, Period and Receivables tabs, auto-select Cash Recon
       reportTabs.querySelectorAll('.sub-tab').forEach(tab => {
-        if (['daily-report', 'range-report', 'receivables-tab'].includes(tab.dataset.subtab)) {
+        if (['daily-report', 'range-report', 'receivables-tab', 'balance-sheet-tab'].includes(tab.dataset.subtab)) {
           tab.style.display = 'none';
         }
       });
@@ -2060,6 +2062,7 @@
     $('#btn-load-daily').onclick = () => loadDailyReport(reportDate.value);
     $('#btn-load-range').onclick = () => loadRangeReport(fromEl.value, toEl.value);
     $('#btn-load-recon').onclick = () => loadReconciliation(reconDate.value);
+    $('#btn-load-balance-sheet').onclick = () => loadBalanceSheet(bsDate.value);
 
     // Quick-range presets
     $$('.quick-range').forEach(btn => {
@@ -2088,6 +2091,7 @@
     if (isAdmin()) {
       loadDailyReport(reportDate.value);
       loadReceivables();
+      loadBalanceSheet(bsDate.value);
     }
   }
 
@@ -2388,6 +2392,100 @@
           <div class="report-row"><span class="label">Cash Sales</span><span class="value positive">${fmt(r.cashSales)}</span></div>
           <div class="report-row"><span class="label">Cash Expenses (${r.transactions.expenseCount})</span><span class="value negative">${fmt(r.cashExpenses)}</span></div>
           <div class="report-row" style="font-weight:700"><span class="label">Expected Cash in Hand</span><span class="value">${fmt(r.expectedCashInHand)}</span></div>
+        </div>
+      `;
+    } catch (e) { console.error(e); }
+  }
+
+  // ===== BALANCE SHEET =====
+  async function loadBalanceSheet(date) {
+    try {
+      const r = await api(`/reports/balance-sheet?date=${date}`);
+      const a = r.assets, l = r.liabilities, eq = r.equity, cb = a.cashBreakdown;
+      $('#balance-sheet-content').innerHTML = `
+        <div class="report-section">
+          <h4>Balance Sheet — As of ${fmtDate(r.asOfDate)}</h4>
+          ${r.balanced ? '' : '<div style="text-align:center;padding:6px;background:var(--danger);color:#fff;border-radius:6px;margin-bottom:8px;font-size:12px">Warning: Balance sheet does not balance — data may be incomplete</div>'}
+        </div>
+
+        <div class="report-section">
+          <h4>Assets</h4>
+          <div class="report-row" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+            <span class="label">Cash & Bank</span>
+            <span class="value">${fmt(a.cashAndBank)}</span>
+          </div>
+          <div class="hidden" style="padding:0 0 8px 12px;border-bottom:1px solid var(--border)">
+            <div class="report-row" style="font-size:12px"><span class="label">Cash collected</span><span class="value">${fmt(cb.cashCollected)}</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Mobile money</span><span class="value">${fmt(cb.mobileMoney)}</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Card collected</span><span class="value">${fmt(cb.cardCollected)}</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Less: expenses paid</span><span class="value negative">(${fmt(cb.lessExpenses)})</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Less: purchase payments</span><span class="value negative">(${fmt(cb.lessPurchasePayments)})</span></div>
+          </div>
+
+          <div class="report-row">
+            <span class="label">Accounts Receivable (${r.receivableCount} orders)</span>
+            <span class="value">${fmt(a.accountsReceivable)}</span>
+          </div>
+
+          <div class="report-row" style="cursor:pointer" onclick="document.getElementById('bs-inv-detail').classList.toggle('hidden')">
+            <span class="label">Inventory</span>
+            <span class="value">${fmt(a.inventory)}</span>
+          </div>
+          <div id="bs-inv-detail" class="hidden" style="padding:0 0 8px 12px;border-bottom:1px solid var(--border)">
+            ${r.inventoryItems.map(i => `
+              <div class="report-row" style="font-size:12px">
+                <span class="label">${i.name} (${i.quantity} ${i.unit} @ ${fmt(i.costPerUnit)})</span>
+                <span class="value">${fmt(i.value)}</span>
+              </div>
+            `).join('') || '<div style="font-size:12px;color:var(--text-dim)">No stock on hand</div>'}
+          </div>
+
+          <div class="report-row" style="font-weight:700;border-top:2px solid var(--border-light);padding-top:8px">
+            <span class="label">Total Assets</span>
+            <span class="value positive">${fmt(a.total)}</span>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <h4>Liabilities</h4>
+          <div class="report-row">
+            <span class="label">Accounts Payable (${r.payableCount} POs)</span>
+            <span class="value">${fmt(l.accountsPayable)}</span>
+          </div>
+          <div class="report-row" style="font-weight:700;border-top:2px solid var(--border-light);padding-top:8px">
+            <span class="label">Total Liabilities</span>
+            <span class="value negative">${fmt(l.total)}</span>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <h4>Owner's Equity</h4>
+          <div class="report-row" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+            <span class="label">Retained Earnings</span>
+            <span class="value">${fmt(eq.retainedEarnings)}</span>
+          </div>
+          <div class="hidden" style="padding:0 0 8px 12px;border-bottom:1px solid var(--border)">
+            <div class="report-row" style="font-size:12px"><span class="label">Total Revenue</span><span class="value positive">${fmt(r.summary.totalRevenue)}</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Less: Cost of Goods</span><span class="value negative">(${fmt(r.summary.totalCogs)})</span></div>
+            <div class="report-row" style="font-size:12px"><span class="label">Less: Expenses</span><span class="value negative">(${fmt(r.summary.totalExpenses)})</span></div>
+            <div class="report-row" style="font-size:12px;font-weight:600"><span class="label">Net Income</span><span class="value ${r.summary.netIncome >= 0 ? 'positive' : 'negative'}">${fmt(r.summary.netIncome)}</span></div>
+          </div>
+          <div class="report-row" style="font-weight:700;border-top:2px solid var(--border-light);padding-top:8px">
+            <span class="label">Total Equity</span>
+            <span class="value">${fmt(eq.total)}</span>
+          </div>
+        </div>
+
+        <div class="report-section" style="background:var(--bg-card-2);border-radius:var(--radius-sm);padding:12px">
+          <div class="report-row" style="font-weight:700">
+            <span class="label">Total Assets</span>
+            <span class="value positive">${fmt(a.total)}</span>
+          </div>
+          <div class="report-row" style="font-weight:700">
+            <span class="label">Liabilities + Equity</span>
+            <span class="value">${fmt(r.totalLiabilitiesAndEquity)}</span>
+          </div>
+          ${r.balanced ? '<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--success)">Balanced</div>' : '<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--danger)">Imbalanced — review data</div>'}
         </div>
       `;
     } catch (e) { console.error(e); }
