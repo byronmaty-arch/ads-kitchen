@@ -143,6 +143,129 @@ router.get('/range', (req, res) => {
   });
 });
 
+// Balance Sheet
+router.get('/balance-sheet', (req, res) => {
+  const asOfDate = req.query.date || new Date().toISOString().split('T')[0];
+  const orders = readData('orders.json');
+  const expenses = readData('expenses.json');
+  const purchases = readData('purchases.json');
+  const inventory = readData('inventory.json');
+  const { getItemCost } = buildCostingMaps();
+
+  // Filter everything up to asOfDate
+  const ordersToDate = orders.filter(o => o.date <= asOfDate);
+  const expensesToDate = expenses.filter(e => e.date <= asOfDate);
+  const purchasesToDate = purchases.filter(p => p.date <= asOfDate);
+
+  // --- ASSETS ---
+
+  // 1. Inventory value (current stock qty × cost per unit)
+  const inventoryValue = inventory.reduce((sum, item) => {
+    return sum + (item.quantity || 0) * (item.costPerUnit || 0);
+  }, 0);
+
+  // 2. Accounts Receivable (credit orders - partial payments)
+  const creditOrders = ordersToDate.filter(o => o.paymentStatus === 'credit');
+  const accountsReceivable = creditOrders.reduce((sum, o) => {
+    return sum + ((o.total || 0) - (o.creditAmountPaid || 0));
+  }, 0);
+
+  // 3. Cash & Bank: total cash/mobile/card collected minus cash expenses paid minus purchase payments
+  const revenueOrders = ordersToDate.filter(o => o.paymentStatus === 'paid' || o.paymentStatus === 'credit');
+  let cashCollected = 0;
+  let mobileMoney = 0;
+  let cardCollected = 0;
+  let creditPaymentsReceived = 0;
+  revenueOrders.forEach(o => {
+    if (o.paymentStatus === 'paid') {
+      const method = o.paymentMethod || 'cash';
+      if (method === 'cash') cashCollected += o.total || 0;
+      else if (method === 'mobile_money') mobileMoney += o.total || 0;
+      else if (method === 'card') cardCollected += o.total || 0;
+    }
+  });
+  // Credit partial payments received
+  creditOrders.forEach(o => {
+    (o.creditPayments || []).forEach(p => {
+      if (p.date <= asOfDate) {
+        creditPaymentsReceived += p.amount || 0;
+        const method = p.method || 'cash';
+        if (method === 'cash') cashCollected += p.amount || 0;
+        else if (method === 'mobile_money') mobileMoney += p.amount || 0;
+        else if (method === 'card') cardCollected += p.amount || 0;
+      }
+    });
+  });
+  const totalExpensesPaid = expensesToDate.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalPurchasePayments = purchasesToDate.reduce((s, p) => s + (p.amountPaid || 0), 0);
+  const cashAndBank = (cashCollected + mobileMoney + cardCollected) - totalExpensesPaid - totalPurchasePayments;
+
+  const totalAssets = cashAndBank + accountsReceivable + inventoryValue;
+
+  // --- LIABILITIES ---
+
+  // Accounts Payable (unpaid purchase orders)
+  const accountsPayable = purchasesToDate
+    .filter(p => p.status !== 'cancelled' && p.paymentStatus !== 'paid')
+    .reduce((sum, p) => sum + ((p.totalAmount || 0) - (p.amountPaid || 0)), 0);
+
+  const totalLiabilities = accountsPayable;
+
+  // --- EQUITY ---
+
+  // Retained Earnings = cumulative revenue - COGS - expenses
+  const totalRevenue = revenueOrders.reduce((s, o) => s + (o.total || 0), 0);
+  let totalCogs = 0;
+  revenueOrders.forEach(o => {
+    (o.items || []).forEach(item => {
+      totalCogs += getItemCost(item.name) * item.quantity;
+    });
+  });
+  const retainedEarnings = totalRevenue - totalCogs - totalExpensesPaid;
+
+  const totalEquity = retainedEarnings;
+
+  res.json({
+    asOfDate,
+    assets: {
+      cashAndBank: Math.round(cashAndBank),
+      cashBreakdown: {
+        cashCollected: Math.round(cashCollected),
+        mobileMoney: Math.round(mobileMoney),
+        cardCollected: Math.round(cardCollected),
+        creditPaymentsReceived: Math.round(creditPaymentsReceived),
+        lessExpenses: Math.round(totalExpensesPaid),
+        lessPurchasePayments: Math.round(totalPurchasePayments)
+      },
+      accountsReceivable: Math.round(accountsReceivable),
+      inventory: Math.round(inventoryValue),
+      total: Math.round(totalAssets)
+    },
+    liabilities: {
+      accountsPayable: Math.round(accountsPayable),
+      total: Math.round(totalLiabilities)
+    },
+    equity: {
+      retainedEarnings: Math.round(retainedEarnings),
+      total: Math.round(totalEquity)
+    },
+    totalLiabilitiesAndEquity: Math.round(totalLiabilities + totalEquity),
+    balanced: Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 1,
+    inventoryItems: inventory
+      .filter(i => (i.quantity || 0) > 0)
+      .map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit, costPerUnit: i.costPerUnit || 0, value: Math.round((i.quantity || 0) * (i.costPerUnit || 0)) }))
+      .sort((a, b) => b.value - a.value),
+    receivableCount: creditOrders.length,
+    payableCount: purchasesToDate.filter(p => p.status !== 'cancelled' && p.paymentStatus !== 'paid').length,
+    summary: {
+      totalRevenue: Math.round(totalRevenue),
+      totalCogs: Math.round(totalCogs),
+      totalExpenses: Math.round(totalExpensesPaid),
+      netIncome: Math.round(retainedEarnings)
+    }
+  });
+});
+
 // Reconciliation
 router.get('/reconciliation', (req, res) => {
   const date = req.query.date || new Date().toISOString().split('T')[0];
