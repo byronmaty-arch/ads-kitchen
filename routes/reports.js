@@ -3,6 +3,9 @@ const { readData, readConfig } = require('../lib/db');
 const { buildReconciliation, buildReconciliationMessage, sendTelegramMessage, todayInEAT } = require('../lib/telegram');
 const router = express.Router();
 
+// Revenue includes both fully paid and credit orders (food was served)
+function isRevenue(o) { return o.paymentStatus === 'paid' || o.paymentStatus === 'credit'; }
+
 // Helper: build costing maps used by daily + range reports
 function buildCostingMaps() {
   const portionMap = readData('portion-map.json');
@@ -29,7 +32,7 @@ function buildWaiterPerformance(orders) {
     const name = o.staffName || 'Unknown';
     if (!wp[name]) wp[name] = { waiter: name, orders: 0, revenue: 0, items: 0 };
     wp[name].orders++;
-    if (o.paymentStatus === 'paid') wp[name].revenue += o.total || 0;
+    if (isRevenue(o)) wp[name].revenue += o.total || 0;
     (o.items || []).forEach(i => { wp[name].items += i.quantity; });
   });
   return Object.values(wp).sort((a, b) => b.revenue - a.revenue);
@@ -42,10 +45,10 @@ router.get('/daily', (req, res) => {
   const expenses = readData('expenses.json').filter(e => e.date === date);
   const { getItemCost, menuToStock } = buildCostingMaps();
 
-  const totalRevenue = orders.filter(o => o.paymentStatus === 'paid').reduce((s, o) => s + (o.total || 0), 0);
+  const totalRevenue = orders.filter(isRevenue).reduce((s, o) => s + (o.total || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const paymentMethods = {};
-  orders.filter(o => o.paymentStatus === 'paid').forEach(o => {
+  orders.filter(isRevenue).forEach(o => {
     const method = o.paymentMethod || 'cash';
     paymentMethods[method] = (paymentMethods[method] || 0) + (o.total || 0);
   });
@@ -58,7 +61,7 @@ router.get('/daily', (req, res) => {
 
   let cogs = 0;
   const cogsDetail = {};
-  orders.filter(o => o.paymentStatus === 'paid').forEach(o => (o.items || []).forEach(item => {
+  orders.filter(isRevenue).forEach(o => (o.items || []).forEach(item => {
     const unitCost = getItemCost(item.name);
     const totalCost = unitCost * item.quantity;
     cogs += totalCost;
@@ -71,9 +74,11 @@ router.get('/daily', (req, res) => {
     .map(c => ({ ...c, margin: c.revenue > 0 ? ((c.revenue - c.totalCost) / c.revenue * 100).toFixed(1) : '0.0' }))
     .sort((a, b) => b.totalCost - a.totalCost);
 
-  const paidOrders = orders.filter(o => o.paymentStatus === 'paid').length;
+  const creditRevenue = orders.filter(o => o.paymentStatus === 'credit').reduce((s, o) => s + (o.total || 0), 0);
+  const paidOrders = orders.filter(isRevenue).length;
   res.json({
     date, totalRevenue, totalExpenses, cogs, cogsBreakdown,
+    creditRevenue, creditOrders: orders.filter(o => o.paymentStatus === 'credit').length,
     grossProfit: totalRevenue - cogs, netProfit: totalRevenue - cogs - totalExpenses,
     grossMargin: totalRevenue > 0 ? ((totalRevenue - cogs) / totalRevenue * 100).toFixed(1) : 0,
     totalOrders: orders.length, paidOrders,
@@ -102,7 +107,7 @@ router.get('/range', (req, res) => {
     dailyData[ds] = { revenue: 0, expenses: 0, orders: 0, cogs: 0 };
     d.setDate(d.getDate() + 1);
   }
-  orders.filter(o => o.paymentStatus === 'paid').forEach(o => {
+  orders.filter(isRevenue).forEach(o => {
     if (dailyData[o.date]) {
       dailyData[o.date].revenue += o.total || 0;
       dailyData[o.date].orders++;

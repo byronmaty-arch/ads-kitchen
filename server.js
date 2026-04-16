@@ -78,17 +78,19 @@ app.get('/api/dashboard', (req, res) => {
   const expenses = readData('expenses.json').filter(e => e.date === today);
   const inventory = readData('inventory.json');
   const lowStock = inventory.filter(i => i.quantity <= i.reorderLevel);
-  const todayRevenue = todayOrders.filter(o => o.paymentStatus === 'paid').reduce((s, o) => s + (o.total || 0), 0);
+  const isRev = o => o.paymentStatus === 'paid' || o.paymentStatus === 'credit';
+  const todayRevenue = todayOrders.filter(isRev).reduce((s, o) => s + (o.total || 0), 0);
   const todayExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const yd = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const yesterdayRevenue = orders.filter(o => o.date === yd && o.paymentStatus === 'paid').reduce((s, o) => s + (o.total || 0), 0);
+  const yesterdayRevenue = orders.filter(o => o.date === yd && isRev(o)).reduce((s, o) => s + (o.total || 0), 0);
   res.json({
     todayRevenue, todayExpenses, todayProfit: todayRevenue - todayExpenses,
     todayOrders: todayOrders.length,
     activeOrders: todayOrders.filter(o => ['new', 'preparing', 'ready'].includes(o.status)).length,
     lowStockCount: lowStock.length, lowStockItems: lowStock.map(i => i.name),
     yesterdayRevenue, revenueChange: yesterdayRevenue > 0 ? (((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1) : 0,
-    unpaidOrders: todayOrders.filter(o => o.paymentStatus === 'unpaid').length
+    unpaidOrders: todayOrders.filter(o => o.paymentStatus === 'unpaid').length,
+    creditOrders: todayOrders.filter(o => o.paymentStatus === 'credit').length
   });
 });
 
