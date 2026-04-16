@@ -162,8 +162,9 @@
       page.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
       $(`#subtab-${tab.dataset.subtab}`, page).classList.add('active');
 
-      // Refresh data when switching to order-list tab
+      // Refresh data when switching to specific tabs
       if (tab.dataset.subtab === 'order-list') loadOrders();
+      if (tab.dataset.subtab === 'settings-audit') loadAuditLog();
     });
   }
 
@@ -854,7 +855,10 @@
         </div>
       </div>
 
-      ${waiters.map(w => `
+      ${waiters.map(w => {
+        const waiterOrders = allDayOrders.filter(o => (o.staffName || 'Unknown') === w.waiter)
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        return `
         <div class="recon-waiter-card">
           <div class="recon-waiter-header" onclick="this.parentElement.classList.toggle('recon-expanded')">
             <div class="recon-waiter-name">
@@ -892,13 +896,44 @@
                 `).join('')}
               </div>
             ` : ''}
-            <button class="btn btn-sm btn-outline recon-view-orders" style="margin-top:8px;width:100%" onclick="document.querySelector('#orders-waiter-filter').value='${w.waiter}';document.querySelector('#orders-waiter-filter').dispatchEvent(new Event('change'))">
-              <span class="material-icons-round" style="font-size:16px;vertical-align:middle">visibility</span> View ${w.waiter}'s Orders
+            ${waiterOrders.length > 0 ? `
+              <div class="recon-orders-list">
+                <span class="recon-detail-label" style="margin-bottom:6px;display:block">Orders (${waiterOrders.length})</span>
+                <div class="recon-orders-scroll">
+                  ${waiterOrders.map(o => `
+                    <div class="recon-order-row">
+                      <div class="recon-order-meta">
+                        <span class="recon-order-num">#${o.orderNumber}</span>
+                        <span class="recon-order-time">${fmtTime(o.createdAt)}</span>
+                        ${o.table ? `<span class="recon-order-table">T${o.table}</span>` : ''}
+                        <span class="badge badge-${o.paymentStatus === 'credit' ? 'credit' : o.paymentStatus}" style="font-size:10px;padding:2px 5px">${o.paymentStatus === 'credit' ? 'CREDIT' : o.paymentStatus.toUpperCase()}</span>
+                        <span class="recon-order-total">${fmt(o.total)}</span>
+                      </div>
+                      <div class="recon-order-items-list">${(o.items||[]).map(i => `${i.quantity}\u00d7 ${i.name}`).join(', ')}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+            <button class="btn btn-sm btn-outline recon-view-orders" data-waiter="${w.waiter.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" style="margin-top:8px;width:100%">
+              <span class="material-icons-round" style="font-size:16px;vertical-align:middle">open_in_new</span> Open ${w.waiter}'s Orders
             </button>
           </div>
         </div>
-      `).join('')}
+        `;
+      }).join('')}
     `;
+
+    // Wire up view-orders buttons after DOM is rendered
+    panel.querySelectorAll('.recon-view-orders').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.waiter;
+        const wf = $('#orders-waiter-filter');
+        if (wf) { wf.value = name; wf.dispatchEvent(new Event('change')); }
+        panel.classList.add('hidden');
+        $('#orders-list').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
 
     panel.classList.remove('hidden');
   }
@@ -2577,9 +2612,16 @@
   // ===== SETTINGS =====
   async function loadSettings() {
     if (currentUser.role !== 'manager') {
-      $('.settings-form').innerHTML = '<div class="empty-state"><p>Manager access only</p></div>';
+      $('#settings-sub-tabs').classList.add('hidden');
+      $('#subtab-settings-general').innerHTML = '<div class="empty-state"><p>Manager access only</p></div>';
+      $('#subtab-settings-general').classList.add('active');
+      $('#subtab-settings-audit').classList.remove('active');
       return;
     }
+    $('#settings-sub-tabs').classList.remove('hidden');
+    // Hide audit tab for non-managers (redundant safety check)
+    $('#settings-audit-tab').classList.remove('hidden');
+
     settings = await api('/settings');
     $('#set-name').value = settings.restaurantName || '';
     $('#set-location').value = settings.location || '';
@@ -2598,6 +2640,100 @@
       populateTableSelect();
       toast('Settings saved');
     };
+  }
+
+  // ===== SYSTEM AUDIT LOG =====
+  let auditFilter = 'all';
+
+  function parseDeviceUA(ua) {
+    if (!ua) return 'Unknown device';
+    let os = 'Unknown OS';
+    if (/Android/i.test(ua)) os = 'Android';
+    else if (/iPhone|iPad/i.test(ua)) os = 'iOS';
+    else if (/Windows/i.test(ua)) os = 'Windows';
+    else if (/Mac OS X/i.test(ua)) os = 'macOS';
+    else if (/Linux/i.test(ua)) os = 'Linux';
+    let browser = '?';
+    if (/Edg\//i.test(ua)) browser = 'Edge';
+    else if (/Chrome/i.test(ua)) browser = 'Chrome';
+    else if (/Firefox/i.test(ua)) browser = 'Firefox';
+    else if (/Safari/i.test(ua)) browser = 'Safari';
+    return `${browser} / ${os}`;
+  }
+
+  function fmtAuditTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-UG', { day: 'numeric', month: 'short' }) + ' ' +
+      d.toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function loadAuditLog() {
+    const el = $('#audit-log-list');
+    if (!el) return;
+    try {
+      const log = await api('/audit/login-log');
+
+      // Filter buttons
+      $$('.audit-filter').forEach(btn => {
+        btn.onclick = () => {
+          auditFilter = btn.dataset.filter;
+          $$('.audit-filter').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderAuditLog(log);
+        };
+      });
+
+      $('#btn-clear-audit').onclick = async () => {
+        if (!confirm('Clear the entire login history? This cannot be undone.')) return;
+        await api('/audit/login-log', { method: 'DELETE' });
+        toast('Audit log cleared');
+        loadAuditLog();
+      };
+
+      renderAuditLog(log);
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><p>Failed to load audit log</p></div>`;
+    }
+  }
+
+  function renderAuditLog(log) {
+    const el = $('#audit-log-list');
+    let filtered = log;
+    if (auditFilter === 'success') filtered = log.filter(e => e.success);
+    else if (auditFilter === 'failed') filtered = log.filter(e => !e.success);
+    else if (auditFilter === 'alerts') filtered = log.filter(e => e.ipChanged);
+
+    if (!filtered.length) {
+      el.innerHTML = `<div class="empty-state"><span class="material-icons-round">verified_user</span><p>${auditFilter === 'alerts' ? 'No IP alerts — all logins from known devices' : 'No log entries'}</p></div>`;
+      return;
+    }
+
+    el.innerHTML = filtered.map(entry => {
+      const device = parseDeviceUA(entry.userAgent);
+      const time = fmtAuditTime(entry.timestamp);
+      const statusClass = entry.success ? 'audit-status-ok' : 'audit-status-fail';
+      const statusLabel = entry.success ? 'Success' : 'Failed';
+      return `
+        <div class="audit-entry${entry.ipChanged ? ' audit-entry-alert' : ''}">
+          ${entry.ipChanged ? '<div class="audit-alert-banner"><span class="material-icons-round">warning</span> New IP / Device detected</div>' : ''}
+          <div class="audit-entry-row">
+            <div class="audit-user">
+              <span class="material-icons-round">${entry.success ? 'person' : 'person_off'}</span>
+              <div>
+                <div class="audit-name">${entry.staffName || 'Unknown'}</div>
+                <div class="audit-role">${entry.role || 'unknown role'}</div>
+              </div>
+            </div>
+            <span class="audit-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="audit-meta">
+            <span class="material-icons-round">schedule</span>${time}
+            <span class="material-icons-round">dns</span>${entry.ip}
+            <span class="material-icons-round">devices</span>${device}
+          </div>
+        </div>`;
+    }).join('');
   }
 
   // ===== NOTIFICATION / ALERT SYSTEM =====

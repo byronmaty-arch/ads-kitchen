@@ -178,6 +178,15 @@ app.put('/api/customers/:id', (req, res) => {
   res.json(customers[idx]);
 });
 
+// /api/audit/login-log → admin-only login history
+app.get('/api/audit/login-log', (req, res) => {
+  res.json(readData('login-log.json'));
+});
+app.delete('/api/audit/login-log', (req, res) => {
+  writeData('login-log.json', []);
+  res.json({ ok: true });
+});
+
 // Manual backup trigger
 app.post('/api/backup/run', async (req, res) => {
   const provided = (req.headers['x-backup-token'] || (req.body && req.body.token) || '').toString();

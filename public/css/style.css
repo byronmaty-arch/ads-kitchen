@@ -939,6 +939,30 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 }
 .recon-method-row span:last-child { font-weight: 600; color: var(--text); }
 
+.recon-orders-list {
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+}
+.recon-orders-scroll {
+  max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  padding-right: 2px;
+}
+.recon-order-row {
+  background: var(--surface); border-radius: 6px; padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+.recon-order-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.recon-order-num { font-size: 13px; font-weight: 700; color: var(--text); }
+.recon-order-time { font-size: 11px; color: var(--text-muted); }
+.recon-order-table { font-size: 11px; color: var(--text-dim); background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+.recon-order-total { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--text); }
+.recon-order-items-list {
+  font-size: 11px; color: var(--text-muted); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recon-waiter-card.recon-expanded .recon-waiter-detail { max-height: 900px; }
+
 @media (max-width: 600px) {
   .recon-grand-total { grid-template-columns: repeat(2, 1fr); }
   .recon-stat-value { font-size: 12px; }
@@ -1223,6 +1247,59 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 
 /* ===== PORTION INFO ===== */
 .inv-portion { font-size: 11px; color: var(--info); }
+
+/* ===== SYSTEM AUDIT ===== */
+.audit-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; gap: 8px; flex-wrap: wrap;
+}
+.audit-filters {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.audit-filter {
+  padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border); color: var(--text-muted); transition: all 0.2s;
+}
+.audit-filter.active {
+  background: var(--primary); border-color: var(--primary); color: #fff;
+}
+.audit-entry {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 8px; overflow: hidden;
+}
+.audit-entry-alert {
+  border-color: var(--warning);
+  box-shadow: 0 0 0 1px rgba(243,156,18,0.3);
+}
+.audit-alert-banner {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(243,156,18,0.15); color: var(--warning);
+  font-size: 11px; font-weight: 700; padding: 5px 10px;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.audit-alert-banner .material-icons-round { font-size: 14px; }
+.audit-entry-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+}
+.audit-user {
+  display: flex; align-items: center; gap: 8px;
+}
+.audit-user .material-icons-round { font-size: 20px; color: var(--text-dim); }
+.audit-name { font-size: 14px; font-weight: 600; }
+.audit-role { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
+.audit-status {
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 12px; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.audit-status-ok { background: rgba(46,204,113,0.15); color: var(--success); }
+.audit-status-fail { background: rgba(231,76,60,0.15); color: var(--danger); }
+.audit-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 12px 10px; font-size: 11px; color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.audit-meta .material-icons-round { font-size: 13px; color: var(--text-dim); }
 
 /* ===== RESPONSIVE ===== */
 @media (min-width: 768px) {
