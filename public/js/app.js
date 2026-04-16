@@ -172,7 +172,7 @@
     // Block restricted pages by role
     const role = currentUser && currentUser.role;
     const waiterBlocked = ['kitchen', 'inventory', 'expenses', 'reports', 'procurement', 'customers'];
-    const cashierBlocked = ['kitchen', 'inventory', 'expenses', 'procurement', 'customers']; // cashier keeps reports for cash recon
+    const cashierBlocked = ['kitchen', 'inventory', 'customers']; // cashier keeps reports, expenses, procurement
     if (role === 'waiter' && waiterBlocked.includes(page)) {
       page = 'orders';
     } else if (role === 'cashier' && cashierBlocked.includes(page)) {
@@ -213,7 +213,7 @@
     const adminOnlyPages = ['menu', 'staff', 'settings'];
     const hiddenForKitchen = ['expenses', 'reports'];
     const hiddenForWaiter = ['expenses', 'reports', 'procurement', 'customers'];
-    const hiddenForCashier = ['expenses', 'procurement', 'customers']; // cashier keeps reports for cash recon
+    const hiddenForCashier = ['customers']; // cashier keeps reports, expenses, procurement
     const role = currentUser && currentUser.role;
 
     $$('.drawer-item', drawer).forEach(item => {
