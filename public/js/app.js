@@ -779,7 +779,7 @@
     if (panel) { panel.classList.add('hidden'); panel.innerHTML = ''; }
   }
 
-  function toggleWaiterRecon() {
+  async function toggleWaiterRecon() {
     const panel = $('#waiter-recon-panel');
     if (!panel.classList.contains('hidden')) {
       panel.classList.add('hidden');
@@ -787,155 +787,197 @@
       return;
     }
 
-    // Build reconciliation data from allDayOrders
-    const waiterData = {};
-    allDayOrders.forEach(o => {
-      const name = o.staffName || 'Unknown';
-      if (!waiterData[name]) {
-        waiterData[name] = {
-          waiter: name,
-          totalOrders: 0, totalRevenue: 0, totalItems: 0,
-          paid: { count: 0, amount: 0 },
-          unpaid: { count: 0, amount: 0 },
-          credit: { count: 0, amount: 0 },
-          methods: {}
-        };
-      }
-      const wd = waiterData[name];
-      wd.totalOrders++;
-      wd.totalRevenue += o.total || 0;
-      (o.items || []).forEach(i => { wd.totalItems += i.quantity; });
+    panel.classList.remove('hidden');
+    panel.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading reconciliation…</div>';
 
-      if (o.paymentStatus === 'paid') {
-        wd.paid.count++;
-        wd.paid.amount += o.total || 0;
-        const method = o.paymentMethod || 'cash';
-        wd.methods[method] = (wd.methods[method] || 0) + (o.total || 0);
-      } else if (o.paymentStatus === 'credit') {
-        wd.credit.count++;
-        wd.credit.amount += o.total || 0;
-      } else {
-        wd.unpaid.count++;
-        wd.unpaid.amount += o.total || 0;
-      }
-    });
+    try {
+      const date = $('#orders-date-filter').value;
 
-    const waiters = Object.values(waiterData).sort((a, b) => b.totalRevenue - a.totalRevenue);
-    const grandTotal = waiters.reduce((s, w) => s + w.totalRevenue, 0);
-    const grandPaid = waiters.reduce((s, w) => s + w.paid.amount, 0);
-    const grandUnpaid = waiters.reduce((s, w) => s + w.unpaid.amount, 0);
-    const grandCredit = waiters.reduce((s, w) => s + w.credit.amount, 0);
+      // Fetch full reconciliation (all orders + expenses + credit settlements) and all unfiltered orders
+      const [recon, allOrders] = await Promise.all([
+        api(`/reports/reconciliation?date=${date}`),
+        api(`/orders?date=${date}`)
+      ]);
 
-    const fmtMethod = m => m === 'mobile_money' ? 'M-Money' : m === 'credit_settled' ? 'Credit (Settled)' : m.charAt(0).toUpperCase() + m.slice(1);
+      // Build waiter breakdown from ALL orders for the day (not the status-filtered allDayOrders)
+      const waiterData = {};
+      allOrders.forEach(o => {
+        const name = o.staffName || 'Unknown';
+        if (!waiterData[name]) {
+          waiterData[name] = {
+            waiter: name,
+            totalOrders: 0, totalRevenue: 0, totalItems: 0,
+            paid: { count: 0, amount: 0 },
+            unpaid: { count: 0, amount: 0 },
+            credit: { count: 0, amount: 0 },
+            methods: {}
+          };
+        }
+        const wd = waiterData[name];
+        wd.totalOrders++;
+        wd.totalRevenue += o.total || 0;
+        (o.items || []).forEach(i => { wd.totalItems += i.quantity; });
 
-    panel.innerHTML = `
-      <div class="recon-header">
-        <h3><span class="material-icons-round">summarize</span> Waiter Reconciliation — ${fmtDate($('#orders-date-filter').value)}</h3>
-        <button class="pos-clear-btn" onclick="document.querySelector('#waiter-recon-panel').classList.add('hidden')">
-          <span class="material-icons-round">close</span>
-        </button>
-      </div>
+        if (o.paymentStatus === 'paid') {
+          wd.paid.count++;
+          wd.paid.amount += o.total || 0;
+          const method = o.paymentMethod || 'cash';
+          wd.methods[method] = (wd.methods[method] || 0) + (o.total || 0);
+        } else if (o.paymentStatus === 'credit') {
+          wd.credit.count++;
+          wd.credit.amount += o.total || 0;
+        } else {
+          wd.unpaid.count++;
+          wd.unpaid.amount += o.total || 0;
+        }
+      });
 
-      <div class="recon-grand-total">
-        <div class="recon-stat">
-          <span class="recon-stat-label">Total Sales</span>
-          <span class="recon-stat-value">${fmt(grandTotal)}</span>
+      const waiters = Object.values(waiterData).sort((a, b) => b.totalRevenue - a.totalRevenue);
+      const grandUnpaid = waiters.reduce((s, w) => s + w.unpaid.amount, 0);
+      const grandCredit = waiters.reduce((s, w) => s + w.credit.amount, 0);
+
+      const fmtMethod = m => m === 'mobile_money' ? 'M-Money' : m === 'credit_settled' ? 'Credit (Settled)' : m.charAt(0).toUpperCase() + m.slice(1);
+
+      panel.innerHTML = `
+        <div class="recon-header">
+          <h3><span class="material-icons-round">summarize</span> Cash Reconciliation — ${fmtDate(date)}</h3>
+          <button class="pos-clear-btn" onclick="document.querySelector('#waiter-recon-panel').classList.add('hidden')">
+            <span class="material-icons-round">close</span>
+          </button>
         </div>
-        <div class="recon-stat">
-          <span class="recon-stat-label">Collected</span>
-          <span class="recon-stat-value" style="color:var(--success)">${fmt(grandPaid)}</span>
-        </div>
-        <div class="recon-stat">
-          <span class="recon-stat-label">Unpaid</span>
-          <span class="recon-stat-value" style="color:var(--danger)">${fmt(grandUnpaid)}</span>
-        </div>
-        <div class="recon-stat">
-          <span class="recon-stat-label">Credit</span>
-          <span class="recon-stat-value" style="color:var(--info)">${fmt(grandCredit)}</span>
-        </div>
-      </div>
 
-      ${waiters.map(w => {
-        const waiterOrders = allDayOrders.filter(o => (o.staffName || 'Unknown') === w.waiter)
-          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        return `
-        <div class="recon-waiter-card">
-          <div class="recon-waiter-header" onclick="this.parentElement.classList.toggle('recon-expanded')">
-            <div class="recon-waiter-name">
-              <span class="material-icons-round">person</span>
-              <strong>${w.waiter}</strong>
-              <span class="recon-order-count">${w.totalOrders} orders · ${w.totalItems} items</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-weight:700">${fmt(w.totalRevenue)}</span>
-              <span class="material-icons-round" style="font-size:18px;transition:transform 0.2s">expand_more</span>
-            </div>
+        <div class="recon-grand-total" style="flex-wrap:wrap">
+          <div class="recon-stat">
+            <span class="recon-stat-label">Cash Sales</span>
+            <span class="recon-stat-value">${fmt(recon.cashSales)}</span>
           </div>
-          <div class="recon-waiter-detail">
-            <div class="recon-detail-grid">
-              <div class="recon-detail-item">
-                <span class="recon-detail-label">Paid (Collected)</span>
-                <span class="recon-detail-val" style="color:var(--success)">${w.paid.count} orders · ${fmt(w.paid.amount)}</span>
+          <div class="recon-stat">
+            <span class="recon-stat-label">M-Money</span>
+            <span class="recon-stat-value">${fmt(recon.mobileSales)}</span>
+          </div>
+          <div class="recon-stat">
+            <span class="recon-stat-label">Card</span>
+            <span class="recon-stat-value">${fmt(recon.cardSales)}</span>
+          </div>
+          <div class="recon-stat">
+            <span class="recon-stat-label">Total Sales</span>
+            <span class="recon-stat-value" style="color:var(--success)">${fmt(recon.totalSales)}</span>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border-radius:8px;padding:12px 16px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span>Cash Sales</span><span>+ ${fmt(recon.cashSales)}</span>
+          </div>
+          ${recon.creditCollected > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--text-muted)">
+            <span>↳ incl. credit collected today (${recon.transactions.creditPayments} payments)</span><span>${fmt(recon.creditCollected)}</span>
+          </div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--danger)">
+            <span>Cash Expenses (${recon.transactions.expenseCount})</span><span>− ${fmt(recon.cashExpenses)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;padding-top:8px;border-top:1px solid var(--border)">
+            <span>Expected Cash in Hand</span><span style="color:var(--success)">${fmt(recon.expectedCashInHand)}</span>
+          </div>
+        </div>
+
+        ${grandUnpaid > 0 || grandCredit > 0 ? `
+        <div style="background:var(--bg-card);border-radius:8px;padding:12px 16px;margin-bottom:12px">
+          ${grandUnpaid > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--danger)">
+            <span>Unpaid Orders</span><span>${fmt(grandUnpaid)}</span>
+          </div>` : ''}
+          ${grandCredit > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;color:var(--info)">
+            <span>Outstanding Credit</span><span>${fmt(grandCredit)}</span>
+          </div>` : ''}
+        </div>` : ''}
+
+        <div style="padding:8px 0 4px;color:var(--text-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
+          Breakdown by Waiter
+        </div>
+
+        ${waiters.map(w => {
+          const waiterOrders = allOrders.filter(o => (o.staffName || 'Unknown') === w.waiter)
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          return `
+          <div class="recon-waiter-card">
+            <div class="recon-waiter-header" onclick="this.parentElement.classList.toggle('recon-expanded')">
+              <div class="recon-waiter-name">
+                <span class="material-icons-round">person</span>
+                <strong>${w.waiter}</strong>
+                <span class="recon-order-count">${w.totalOrders} orders · ${w.totalItems} items</span>
               </div>
-              <div class="recon-detail-item">
-                <span class="recon-detail-label">Unpaid</span>
-                <span class="recon-detail-val" style="color:var(--danger)">${w.unpaid.count} orders · ${fmt(w.unpaid.amount)}</span>
-              </div>
-              <div class="recon-detail-item">
-                <span class="recon-detail-label">Credit</span>
-                <span class="recon-detail-val" style="color:var(--info)">${w.credit.count} orders · ${fmt(w.credit.amount)}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-weight:700">${fmt(w.totalRevenue)}</span>
+                <span class="material-icons-round" style="font-size:18px;transition:transform 0.2s">expand_more</span>
               </div>
             </div>
-            ${Object.keys(w.methods).length > 0 ? `
-              <div class="recon-methods">
-                <span class="recon-detail-label" style="margin-bottom:4px;display:block">Payment Methods</span>
-                ${Object.entries(w.methods).map(([m, amt]) => `
-                  <div class="recon-method-row">
-                    <span>${fmtMethod(m)}</span><span>${fmt(amt)}</span>
-                  </div>
-                `).join('')}
+            <div class="recon-waiter-detail">
+              <div class="recon-detail-grid">
+                <div class="recon-detail-item">
+                  <span class="recon-detail-label">Paid (Collected)</span>
+                  <span class="recon-detail-val" style="color:var(--success)">${w.paid.count} orders · ${fmt(w.paid.amount)}</span>
+                </div>
+                <div class="recon-detail-item">
+                  <span class="recon-detail-label">Unpaid</span>
+                  <span class="recon-detail-val" style="color:var(--danger)">${w.unpaid.count} orders · ${fmt(w.unpaid.amount)}</span>
+                </div>
+                <div class="recon-detail-item">
+                  <span class="recon-detail-label">Credit</span>
+                  <span class="recon-detail-val" style="color:var(--info)">${w.credit.count} orders · ${fmt(w.credit.amount)}</span>
+                </div>
               </div>
-            ` : ''}
-            ${waiterOrders.length > 0 ? `
-              <div class="recon-orders-list">
-                <span class="recon-detail-label" style="margin-bottom:6px;display:block">Orders (${waiterOrders.length})</span>
-                <div class="recon-orders-scroll">
-                  ${waiterOrders.map(o => `
-                    <div class="recon-order-row">
-                      <div class="recon-order-meta">
-                        <span class="recon-order-num">#${o.orderNumber}</span>
-                        <span class="recon-order-time">${fmtTime(o.createdAt)}</span>
-                        ${o.table ? `<span class="recon-order-table">T${o.table}</span>` : ''}
-                        <span class="badge badge-${o.paymentStatus === 'credit' ? 'credit' : o.paymentStatus}" style="font-size:10px;padding:2px 5px">${o.paymentStatus === 'credit' ? 'CREDIT' : o.paymentStatus.toUpperCase()}</span>
-                        <span class="recon-order-total">${fmt(o.total)}</span>
-                      </div>
-                      <div class="recon-order-items-list">${(o.items||[]).map(i => `${i.quantity}\u00d7 ${i.name}`).join(', ')}</div>
+              ${Object.keys(w.methods).length > 0 ? `
+                <div class="recon-methods">
+                  <span class="recon-detail-label" style="margin-bottom:4px;display:block">Payment Methods</span>
+                  ${Object.entries(w.methods).map(([m, amt]) => `
+                    <div class="recon-method-row">
+                      <span>${fmtMethod(m)}</span><span>${fmt(amt)}</span>
                     </div>
                   `).join('')}
                 </div>
-              </div>
-            ` : ''}
-            <button class="btn btn-sm btn-outline recon-view-orders" data-waiter="${w.waiter.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" style="margin-top:8px;width:100%">
-              <span class="material-icons-round" style="font-size:16px;vertical-align:middle">open_in_new</span> Open ${w.waiter}'s Orders
-            </button>
+              ` : ''}
+              ${waiterOrders.length > 0 ? `
+                <div class="recon-orders-list">
+                  <span class="recon-detail-label" style="margin-bottom:6px;display:block">Orders (${waiterOrders.length})</span>
+                  <div class="recon-orders-scroll">
+                    ${waiterOrders.map(o => `
+                      <div class="recon-order-row">
+                        <div class="recon-order-meta">
+                          <span class="recon-order-num">#${o.orderNumber}</span>
+                          <span class="recon-order-time">${fmtTime(o.createdAt)}</span>
+                          ${o.table ? `<span class="recon-order-table">T${o.table}</span>` : ''}
+                          <span class="badge badge-${o.paymentStatus === 'credit' ? 'credit' : o.paymentStatus}" style="font-size:10px;padding:2px 5px">${o.paymentStatus === 'credit' ? 'CREDIT' : o.paymentStatus.toUpperCase()}</span>
+                          <span class="recon-order-total">${fmt(o.total)}</span>
+                        </div>
+                        <div class="recon-order-items-list">${(o.items||[]).map(i => `${i.quantity}\u00d7 ${i.name}`).join(', ')}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              <button class="btn btn-sm btn-outline recon-view-orders" data-waiter="${w.waiter.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" style="margin-top:8px;width:100%">
+                <span class="material-icons-round" style="font-size:16px;vertical-align:middle">open_in_new</span> Open ${w.waiter}'s Orders
+              </button>
+            </div>
           </div>
-        </div>
-        `;
-      }).join('')}
-    `;
+          `;
+        }).join('')}
+      `;
 
-    // Wire up view-orders buttons after DOM is rendered
-    panel.querySelectorAll('.recon-view-orders').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const name = btn.dataset.waiter;
-        const wf = $('#orders-waiter-filter');
-        if (wf) { wf.value = name; wf.dispatchEvent(new Event('change')); }
-        panel.classList.add('hidden');
-        $('#orders-list').scrollIntoView({ behavior: 'smooth' });
+      // Wire up view-orders buttons after DOM is rendered
+      panel.querySelectorAll('.recon-view-orders').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const name = btn.dataset.waiter;
+          const wf = $('#orders-waiter-filter');
+          if (wf) { wf.value = name; wf.dispatchEvent(new Event('change')); }
+          panel.classList.add('hidden');
+          $('#orders-list').scrollIntoView({ behavior: 'smooth' });
+        });
       });
-    });
 
-    panel.classList.remove('hidden');
+    } catch (e) {
+      console.error(e);
+      panel.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Failed to load reconciliation. Please try again.</div>';
+    }
   }
 
   function toggleMyRecon() {
@@ -1062,7 +1104,7 @@
               <span style="font-size:12px;color:var(--text-muted)">${fmtTime(o.createdAt)}</span>
             </div>
           </div>
-          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          ${!isWaiter() ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             ${o.paymentStatus === 'unpaid' ? `
               <button class="btn btn-sm btn-success pay-order-btn" data-id="${o.id}" data-method="cash">Cash</button>
               <button class="btn btn-sm btn-warning pay-order-btn" data-id="${o.id}" data-method="mobile_money">M-Money</button>
@@ -1074,7 +1116,7 @@
             ` : ''}
             <button class="btn btn-sm btn-outline view-receipt-btn" data-id="${o.id}">Receipt</button>
             ${o.status === 'served' || o.status === 'ready' ? `<button class="btn btn-sm btn-primary complete-order-btn" data-id="${o.id}">Complete</button>` : ''}
-          </div>
+          </div>` : ''}
         </div>
       `).join('');
 
@@ -2416,9 +2458,10 @@
 
         <div class="report-section">
           <h4>Sales by Payment Method</h4>
-          <div class="report-row"><span class="label">Cash Sales (${r.transactions.cashOrders} orders)</span><span class="value">${fmt(r.cashSales)}</span></div>
+          <div class="report-row"><span class="label">Cash (${r.transactions.cashOrders} orders)</span><span class="value">${fmt(r.cashSales)}</span></div>
           <div class="report-row"><span class="label">Mobile Money (${r.transactions.mobileOrders} orders)</span><span class="value">${fmt(r.mobileSales)}</span></div>
           <div class="report-row"><span class="label">Card (${r.transactions.cardOrders} orders)</span><span class="value">${fmt(r.cardSales)}</span></div>
+          ${r.creditCollected > 0 ? `<div class="report-row" style="font-size:12px;color:var(--text-muted)"><span class="label">↳ incl. credit collected today (${r.transactions.creditPayments} payments)</span><span class="value">${fmt(r.creditCollected)}</span></div>` : ''}
           <div class="report-row" style="font-weight:700"><span class="label">Total Sales</span><span class="value positive">${fmt(r.totalSales)}</span></div>
         </div>
 
