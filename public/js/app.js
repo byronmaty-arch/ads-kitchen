@@ -4,6 +4,7 @@
 
   // --- State ---
   let currentUser = null;
+  let sessionToken = null;
   let currentPage = 'dashboard';
   let cart = [];
   let menuItems = [];
@@ -21,11 +22,25 @@
 
   // --- API Helper ---
   async function api(path, opts = {}) {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+      ...(sessionToken ? { 'X-Session-Token': sessionToken } : {})
+    };
     const res = await fetch(`/api${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       ...opts,
+      headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
+    if (res.status === 401 && path !== '/auth/login') {
+      // Session expired or invalidated — force back to login screen
+      sessionToken = null;
+      currentUser = null;
+      $('#app').classList.add('hidden');
+      $('#login-screen').classList.add('active');
+      toast('Session expired. Please log in again.');
+      throw new Error('Session expired');
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Request failed' }));
       throw new Error(err.error || 'Request failed');
@@ -95,16 +110,20 @@
 
   async function attemptLogin() {
     try {
-      currentUser = await api('/auth/login', { method: 'POST', body: { pin } });
+      const result = await api('/auth/login', { method: 'POST', body: { pin } });
+      sessionToken = result.token;
+      currentUser = { id: result.id, name: result.name, role: result.role };
       $('#login-screen').classList.remove('active');
       $('#app').classList.remove('hidden');
       $('#staff-name').textContent = currentUser.name;
       loadApp();
     } catch (e) {
-      $('#login-error').textContent = 'Invalid PIN. Try again.';
-      pin = '';
-      updatePinDots();
-      setTimeout(() => { $('#login-error').textContent = ''; }, 2000);
+      if (e.message !== 'Session expired') {
+        $('#login-error').textContent = 'Invalid PIN. Try again.';
+        pin = '';
+        updatePinDots();
+        setTimeout(() => { $('#login-error').textContent = ''; }, 2000);
+      }
     }
   }
 
@@ -142,6 +161,9 @@
 
     // Logout
     $('#btn-logout').addEventListener('click', () => {
+      // Invalidate server-side session (fire-and-forget)
+      if (sessionToken) api('/auth/logout', { method: 'POST' }).catch(() => {});
+      sessionToken = null;
       currentUser = null;
       pin = '';
       updatePinDots();

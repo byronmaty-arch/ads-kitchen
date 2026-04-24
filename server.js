@@ -2,7 +2,7 @@
 const express = require('express');
 const path = require('path');
 const { seedDataDirIfEmpty, readData, writeData } = require('./lib/db');
-const { migrateStaffPinsIfNeeded } = require('./lib/auth');
+const { migrateStaffPinsIfNeeded, requireSession } = require('./lib/auth');
 const seedDefaults = require('./lib/seed-defaults');
 const { startReconciliationScheduler } = require('./lib/telegram');
 const { runBackup, startBackupScheduler } = require('./lib/backup');
@@ -36,6 +36,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
     else if (/\.(css|js)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=604800');
   }
 }));
+
+// --- Session Auth Guard ---
+// Protects all /api routes except: login (/auth/*), public ordering (/public/*), and the backup trigger (own token)
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth') || req.path.startsWith('/public') || req.path === '/backup/run') return next();
+  requireSession(req, res, next);
+});
 
 // --- Mount Route Modules ---
 app.use('/api/auth',       require('./lib/auth').router);
