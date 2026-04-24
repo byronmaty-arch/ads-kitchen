@@ -1,15 +1,17 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData } = require('../lib/db');
-const { hashPin, isHashedPin } = require('../lib/auth');
+const { hashPin, isHashedPin, requireRole } = require('../lib/auth');
 const router = express.Router();
 
-router.get('/', (req, res) => {
+const MANAGER = ['manager'];
+
+router.get('/', requireRole(MANAGER), (req, res) => {
   const staff = readData('staff.json');
   res.json(staff.map(s => ({ ...s, pin: '****' })));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requireRole(MANAGER), (req, res) => {
   const staff = readData('staff.json');
   const member = { id: uuidv4(), active: true, ...req.body };
   if (member.pin && !isHashedPin(member.pin)) member.pin = hashPin(member.pin);
@@ -18,7 +20,7 @@ router.post('/', (req, res) => {
   res.status(201).json({ ...member, pin: '****' });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireRole(MANAGER), (req, res) => {
   const staff = readData('staff.json');
   const idx = staff.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -30,7 +32,7 @@ router.put('/:id', (req, res) => {
   res.json({ ...staff[idx], pin: '****' });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireRole(MANAGER), (req, res) => {
   let staff = readData('staff.json');
   staff = staff.filter(s => s.id !== req.params.id);
   writeData('staff.json', staff);

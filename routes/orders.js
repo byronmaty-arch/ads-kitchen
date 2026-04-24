@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData } = require('../lib/db');
+const { requireRole } = require('../lib/auth');
 const router = express.Router();
 
 function staffCodeFromName(name) {
@@ -11,6 +12,7 @@ function staffCodeFromName(name) {
   return letters[0].toUpperCase() + letters[letters.length - 1].toUpperCase();
 }
 
+// GET — all authenticated roles (waiter sees own via ?staffId=, others see all)
 router.get('/', (req, res) => {
   let orders = readData('orders.json');
   if (req.query.date) orders = orders.filter(o => o.date && o.date.startsWith(req.query.date));
@@ -25,11 +27,38 @@ router.get('/:id', (req, res) => {
   res.json(order);
 });
 
+// POST — validate item prices server-side; kitchen role cannot create orders
 router.post('/', (req, res) => {
+  if (req.user.role === 'kitchen') return res.status(403).json({ error: 'Access denied' });
+
   const orders = readData('orders.json');
+  const menu = readData('menu.json');
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   const body = req.body || {};
+
+  // Server-side price validation — ignore client-supplied prices entirely
+  if (body.items && Array.isArray(body.items)) {
+    const validated = [];
+    for (const item of body.items) {
+      const menuItem = menu.find(m => m.id === item.menuId && m.active !== false);
+      if (!menuItem) return res.status(400).json({ error: `Menu item not available: ${item.menuId}` });
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        return res.status(400).json({ error: `Invalid quantity for item: ${menuItem.name}` });
+      }
+      validated.push({
+        menuId: item.menuId,
+        name: menuItem.name,          // server-side name
+        price: menuItem.price,        // server-side price — client value ignored
+        quantity: item.quantity,
+        ...(item.accompaniments ? { accompaniments: item.accompaniments } : {}),
+        ...(item.notes ? { notes: item.notes } : {})
+      });
+    }
+    body.items = validated;
+    body.total = validated.reduce((s, i) => s + i.price * i.quantity, 0);
+  }
+
   let orderNumber;
   if (body.staffId) {
     const staff = readData('staff.json').find(s => s.id === body.staffId);
@@ -39,6 +68,7 @@ router.post('/', (req, res) => {
   } else {
     orderNumber = orders.filter(o => o.date === today).length + 1;
   }
+
   const order = {
     id: uuidv4(), orderNumber, date: today,
     createdAt: now.toISOString(), status: 'new', paymentStatus: 'unpaid',
@@ -49,7 +79,14 @@ router.post('/', (req, res) => {
   res.status(201).json(order);
 });
 
+// PUT — all roles can update basic fields (e.g. customer name, table);
+//        only manager/cashier can change paymentStatus or paymentMethod
 router.put('/:id', (req, res) => {
+  if (req.body.paymentStatus !== undefined || req.body.paymentMethod !== undefined) {
+    if (!['manager', 'cashier'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Only managers and cashiers can update payment status' });
+    }
+  }
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -64,15 +101,16 @@ router.put('/:id', (req, res) => {
   res.json(orders[idx]);
 });
 
-router.delete('/:id', (req, res) => {
+// DELETE — manager only
+router.delete('/:id', requireRole(['manager']), (req, res) => {
   let orders = readData('orders.json');
   orders = orders.filter(o => o.id !== req.params.id);
   writeData('orders.json', orders);
   res.json({ success: true });
 });
 
-// Credit payments
-router.post('/:id/credit-pay', (req, res) => {
+// Credit payments — manager and cashier only
+router.post('/:id/credit-pay', requireRole(['manager', 'cashier']), (req, res) => {
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -85,7 +123,7 @@ router.post('/:id/credit-pay', (req, res) => {
   order.creditPayments.push({
     id: uuidv4(), amount, method: req.body.method || 'cash',
     note: req.body.note || '', date: new Date().toISOString(),
-    recordedBy: req.body.recordedBy || 'admin'
+    recordedBy: req.user.staffName
   });
   if (newPaid >= (order.total || 0)) {
     order.paymentStatus = 'paid';

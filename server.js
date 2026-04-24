@@ -2,7 +2,8 @@
 const express = require('express');
 const path = require('path');
 const { seedDataDirIfEmpty, readData, writeData } = require('./lib/db');
-const { migrateStaffPinsIfNeeded, requireSession } = require('./lib/auth');
+const crypto = require('crypto');
+const { migrateStaffPinsIfNeeded, requireSession, requireRole } = require('./lib/auth');
 const seedDefaults = require('./lib/seed-defaults');
 const { startReconciliationScheduler } = require('./lib/telegram');
 const { runBackup, startBackupScheduler } = require('./lib/backup');
@@ -15,8 +16,17 @@ seedDefaults();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1); // Trust only the immediate Railway proxy (hardens IP-based rate limiting)
 app.use(express.json());
+
+// --- Security Headers ---
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+  next();
+});
 
 // CORS for public ordering API
 app.use('/api/public', (req, res, next) => {
@@ -59,13 +69,16 @@ app.use('/api/public',     require('./routes/public'));
 
 // --- Alias routes (frontend calls these at different paths) ---
 
+const MANAGER_CASHIER = ['manager', 'cashier'];
+const MANAGER = ['manager'];
+
 // /api/kitchen → active orders for kitchen display
 app.get('/api/kitchen', (req, res) => {
   const orders = readData('orders.json');
   res.json(orders.filter(o => ['new', 'preparing'].includes(o.status))
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
 });
-app.put('/api/kitchen/:id/status', (req, res) => {
+app.put('/api/kitchen/:id/status', requireRole(['manager', 'kitchen']), (req, res) => {
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -115,8 +128,8 @@ app.get('/api/notifications', (req, res) => {
   } else { res.json({ alerts: [] }); }
 });
 
-// /api/receivables → credit sales tracking
-app.get('/api/receivables', (req, res) => {
+// /api/receivables → credit sales tracking (manager + cashier only)
+app.get('/api/receivables', requireRole(MANAGER_CASHIER), (req, res) => {
   const orders = readData('orders.json');
   const today = new Date().toISOString().split('T')[0];
   const creditOrders = orders.filter(o => o.paymentStatus === 'credit');
@@ -157,8 +170,8 @@ app.get('/api/receivables', (req, res) => {
 // /api/payables → redirect to purchases sub-route
 app.get('/api/payables', (req, res) => res.redirect(307, '/api/purchases/payables'));
 
-// /api/stock-log → direct read
-app.get('/api/stock-log', (req, res) => {
+// /api/stock-log → direct read (manager + cashier only)
+app.get('/api/stock-log', requireRole(MANAGER_CASHIER), (req, res) => {
   const logs = readData('stock-log.json');
   res.json(logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 100));
 });
@@ -185,21 +198,25 @@ app.put('/api/customers/:id', (req, res) => {
   res.json(customers[idx]);
 });
 
-// /api/audit/login-log → admin-only login history
-app.get('/api/audit/login-log', (req, res) => {
+// /api/audit/login-log → manager only
+app.get('/api/audit/login-log', requireRole(MANAGER), (req, res) => {
   res.json(readData('login-log.json'));
 });
-app.delete('/api/audit/login-log', (req, res) => {
+app.delete('/api/audit/login-log', requireRole(MANAGER), (req, res) => {
   writeData('login-log.json', []);
   res.json({ ok: true });
 });
 
-// Manual backup trigger
+// Manual backup trigger — timing-safe token comparison
 app.post('/api/backup/run', async (req, res) => {
+  const expected = process.env.BACKUP_GITHUB_TOKEN || '';
+  if (!expected) return res.status(401).json({ error: 'Unauthorized' });
   const provided = (req.headers['x-backup-token'] || (req.body && req.body.token) || '').toString();
-  if (!process.env.BACKUP_GITHUB_TOKEN || provided !== process.env.BACKUP_GITHUB_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(provided);
+  const valid = providedBuf.length === expectedBuf.length &&
+    crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!valid) return res.status(401).json({ error: 'Unauthorized' });
   const result = await runBackup();
   if (result.ok) res.json(result); else res.status(500).json(result);
 });

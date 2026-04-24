@@ -1,15 +1,18 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData } = require('../lib/db');
+const { requireRole } = require('../lib/auth');
 const router = express.Router();
 
-router.get('/', (req, res) => {
+const MANAGER_CASHIER = ['manager', 'cashier'];
+
+router.get('/', requireRole(MANAGER_CASHIER), (req, res) => {
   let purchases = readData('purchases.json');
   if (req.query.status) purchases = purchases.filter(p => p.status === req.query.status);
   res.json(purchases.sort((a, b) => new Date(b.date) - new Date(a.date)));
 });
 
-router.post('/', (req, res) => {
+router.post('/', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const creditDays = parseInt(req.body.creditDays) || 0;
   const dueDate = creditDays > 0
@@ -26,7 +29,7 @@ router.post('/', (req, res) => {
   res.status(201).json(po);
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -44,7 +47,7 @@ router.put('/:id', (req, res) => {
   res.json(purchases[idx]);
 });
 
-router.post('/:id/pay', (req, res) => {
+router.post('/:id/pay', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
@@ -57,7 +60,7 @@ router.post('/:id/pay', (req, res) => {
   po.payments.push({
     id: uuidv4(), amount, method: req.body.method || 'cash',
     note: req.body.note || '', date: new Date().toISOString(),
-    recordedBy: req.body.recordedBy || 'admin'
+    recordedBy: req.user.staffName
   });
   po.paymentStatus = newPaid >= (po.totalAmount || 0) ? 'paid' : 'partial';
   po.paidDate = newPaid >= (po.totalAmount || 0) ? new Date().toISOString() : null;
@@ -66,7 +69,7 @@ router.post('/:id/pay', (req, res) => {
 });
 
 // Payables summary
-router.get('/payables', (req, res) => {
+router.get('/payables', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const vendors = readData('vendors.json');
   const vendorMap = {};

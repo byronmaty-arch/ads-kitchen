@@ -1,7 +1,11 @@
 const express = require('express');
 const { readData, readConfig } = require('../lib/db');
 const { buildReconciliation, buildReconciliationMessage, sendTelegramMessage, todayInEAT } = require('../lib/telegram');
+const { requireRole } = require('../lib/auth');
 const router = express.Router();
+
+// All report endpoints: manager and cashier only
+router.use(requireRole(['manager', 'cashier']));
 
 // Revenue includes both fully paid and credit orders (food was served)
 function isRevenue(o) { return o.paymentStatus === 'paid' || o.paymentStatus === 'credit'; }
