@@ -2,9 +2,38 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
+const { validate } = require('../lib/validate');
 const router = express.Router();
 
 const MANAGER_CASHIER = ['manager', 'cashier'];
+
+const PO_ITEM_SHAPE = {
+  inventoryId: { type: 'string', max: 100 },
+  name: { type: 'string', max: 200 },
+  quantity: { type: 'number', min: 0, max: 1_000_000 },
+  unit: { type: 'string', max: 50 },
+  unitCost: { type: 'number', min: 0, max: 100_000_000 },
+  totalCost: { type: 'number', min: 0, max: 1_000_000_000 }
+};
+
+const PO_SCHEMA = {
+  vendorId: { type: 'string', max: 100 },
+  vendorName: { type: 'string', max: 200 },
+  items: { type: 'array', maxLen: 200, of: { type: 'object', shape: PO_ITEM_SHAPE } },
+  totalAmount: { type: 'number', min: 0, max: 10_000_000_000 },
+  status: { type: 'string', enum: ['pending', 'received', 'cancelled'], max: 30 },
+  paymentStatus: { type: 'string', enum: ['unpaid', 'partial', 'paid'], max: 30 },
+  creditDays: { type: 'number', integer: true, min: 0, max: 365 },
+  dueDate: { type: 'string', max: 30 },
+  notes: { type: 'string', max: 1000 },
+  receivedDate: { type: 'string', max: 50 }
+};
+
+const PO_PAY_SCHEMA = {
+  amount: { type: 'number', min: 0.01, max: 10_000_000_000, required: true },
+  method: { type: 'string', enum: ['cash', 'mobile_money', 'card', 'bank'], max: 30 },
+  note: { type: 'string', max: 500 }
+};
 
 router.get('/', requireRole(MANAGER_CASHIER), (req, res) => {
   let purchases = readData('purchases.json');
@@ -13,8 +42,10 @@ router.get('/', requireRole(MANAGER_CASHIER), (req, res) => {
 });
 
 router.post('/', requireRole(MANAGER_CASHIER), (req, res) => {
+  const v = validate(req.body, PO_SCHEMA);
+  if (v.error) return res.status(400).json({ error: v.error });
   const purchases = readData('purchases.json');
-  const creditDays = parseInt(req.body.creditDays) || 0;
+  const creditDays = v.data.creditDays || 0;
   const dueDate = creditDays > 0
     ? new Date(Date.now() + creditDays * 86400000).toISOString().split('T')[0]
     : new Date().toISOString().split('T')[0];
@@ -22,7 +53,7 @@ router.post('/', requireRole(MANAGER_CASHIER), (req, res) => {
     id: uuidv4(), poNumber: `PO-${Date.now().toString(36).toUpperCase()}`,
     status: 'pending', paymentStatus: 'unpaid', date: new Date().toISOString(),
     creditDays, dueDate, amountPaid: 0, payments: [],
-    ...req.body, creditDays, dueDate, amountPaid: 0, payments: []
+    ...v.data, creditDays, dueDate, amountPaid: 0, payments: []
   };
   purchases.push(po);
   writeData('purchases.json', purchases);
@@ -30,10 +61,12 @@ router.post('/', requireRole(MANAGER_CASHIER), (req, res) => {
 });
 
 router.put('/:id', requireRole(MANAGER_CASHIER), (req, res) => {
+  const v = validate(req.body, PO_SCHEMA, { partial: true });
+  if (v.error) return res.status(400).json({ error: v.error });
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  purchases[idx] = { ...purchases[idx], ...req.body };
+  purchases[idx] = { ...purchases[idx], ...v.data };
   if (req.body.status === 'received' && purchases[idx].items) {
     purchases[idx].receivedDate = new Date().toISOString();
     const inv = readData('inventory.json');
@@ -48,18 +81,19 @@ router.put('/:id', requireRole(MANAGER_CASHIER), (req, res) => {
 });
 
 router.post('/:id/pay', requireRole(MANAGER_CASHIER), (req, res) => {
+  const v = validate(req.body, PO_PAY_SCHEMA);
+  if (v.error) return res.status(400).json({ error: v.error });
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const amount = parseFloat(req.body.amount) || 0;
-  if (amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+  const amount = v.data.amount;
   const po = purchases[idx];
   const newPaid = Math.min((po.amountPaid || 0) + amount, po.totalAmount || 0);
   po.amountPaid = newPaid;
   po.payments = po.payments || [];
   po.payments.push({
-    id: uuidv4(), amount, method: req.body.method || 'cash',
-    note: req.body.note || '', date: new Date().toISOString(),
+    id: uuidv4(), amount, method: v.data.method || 'cash',
+    note: v.data.note || '', date: new Date().toISOString(),
     recordedBy: req.user.staffName
   });
   po.paymentStatus = newPaid >= (po.totalAmount || 0) ? 'paid' : 'partial';

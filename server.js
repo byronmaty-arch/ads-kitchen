@@ -4,6 +4,7 @@ const path = require('path');
 const { seedDataDirIfEmpty, readData, writeData } = require('./lib/db');
 const crypto = require('crypto');
 const { migrateStaffPinsIfNeeded, requireSession, requireRole } = require('./lib/auth');
+const { createRateLimiter } = require('./lib/rate-limit');
 const seedDefaults = require('./lib/seed-defaults');
 const { startReconciliationScheduler } = require('./lib/telegram');
 const { runBackup, startBackupScheduler } = require('./lib/backup');
@@ -17,7 +18,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1); // Trust only the immediate Railway proxy (hardens IP-based rate limiting)
-app.use(express.json());
+app.use(express.json({ limit: '100kb' })); // Reject bodies >100kb to prevent disk-fill via JSON store
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Request body too large' });
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON' });
+  next(err);
+});
 
 // --- Security Headers ---
 app.use((req, res, next) => {
@@ -115,7 +121,12 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 // /api/notifications → polling for kitchen/waiter alerts
-app.get('/api/notifications', (req, res) => {
+// Rate-limited (clients poll frequently); restricted to roles that actually consume alerts
+const notificationsLimiter = createRateLimiter({ windowMs: 60_000, max: 120, message: 'Notification poll rate limit reached.' });
+app.get('/api/notifications',
+  notificationsLimiter,
+  requireRole(['manager', 'kitchen', 'waiter']),
+  (req, res) => {
   const { since, role } = req.query;
   const orders = readData('orders.json');
   const sinceTime = since ? new Date(since) : new Date(0);
@@ -180,20 +191,34 @@ app.get('/api/stock-log', requireRole(MANAGER_CASHIER), (req, res) => {
 app.get('/api/portion-map', (req, res) => res.redirect(307, '/api/inventory/portion-map'));
 
 // /api/customers → direct handlers (not forwarded through expenses router)
+const { validate } = require('./lib/validate');
+const CUSTOMER_SCHEMA = {
+  name: { type: 'string', max: 200 },
+  phone: { type: 'string', max: 50 },
+  email: { type: 'string', max: 200 },
+  address: { type: 'string', max: 500 },
+  notes: { type: 'string', max: 1000 },
+  visits: { type: 'number', integer: true, min: 0, max: 1_000_000 },
+  totalSpent: { type: 'number', min: 0, max: 1_000_000_000 }
+};
 app.get('/api/customers', (req, res) => res.json(readData('customers.json')));
 app.post('/api/customers', (req, res) => {
+  const v = validate(req.body, CUSTOMER_SCHEMA);
+  if (v.error) return res.status(400).json({ error: v.error });
   const { v4: uuidv4 } = require('uuid');
   const customers = readData('customers.json');
-  const customer = { id: uuidv4(), visits: 0, totalSpent: 0, createdAt: new Date().toISOString(), ...req.body };
+  const customer = { id: uuidv4(), visits: 0, totalSpent: 0, createdAt: new Date().toISOString(), ...v.data };
   customers.push(customer);
   writeData('customers.json', customers);
   res.status(201).json(customer);
 });
 app.put('/api/customers/:id', (req, res) => {
+  const v = validate(req.body, CUSTOMER_SCHEMA, { partial: true });
+  if (v.error) return res.status(400).json({ error: v.error });
   const customers = readData('customers.json');
   const idx = customers.findIndex(c => c.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  customers[idx] = { ...customers[idx], ...req.body };
+  customers[idx] = { ...customers[idx], ...v.data };
   writeData('customers.json', customers);
   res.json(customers[idx]);
 });

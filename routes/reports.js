@@ -2,10 +2,17 @@ const express = require('express');
 const { readData, readConfig } = require('../lib/db');
 const { buildReconciliation, buildReconciliationMessage, sendTelegramMessage, todayInEAT } = require('../lib/telegram');
 const { requireRole } = require('../lib/auth');
+const { createRateLimiter } = require('../lib/rate-limit');
 const router = express.Router();
 
 // All report endpoints: manager and cashier only
 router.use(requireRole(['manager', 'cashier']));
+
+// Cap heavy report queries: 30/min per user
+router.use(createRateLimiter({ windowMs: 60_000, max: 30, message: 'Report rate limit reached. Try again in a minute.' }));
+
+const MAX_RANGE_DAYS = 90;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Revenue includes both fully paid and credit orders (food was served)
 function isRevenue(o) { return o.paymentStatus === 'paid' || o.paymentStatus === 'credit'; }
@@ -99,6 +106,19 @@ router.get('/daily', (req, res) => {
 router.get('/range', (req, res) => {
   const { from, to } = req.query;
   if (!from || !to) return res.status(400).json({ error: 'from and to dates required' });
+  if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
+    return res.status(400).json({ error: 'Dates must be in YYYY-MM-DD format' });
+  }
+  const fromMs = Date.parse(from + 'T00:00:00Z');
+  const toMs = Date.parse(to + 'T00:00:00Z');
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) {
+    return res.status(400).json({ error: 'Invalid date' });
+  }
+  if (toMs < fromMs) return res.status(400).json({ error: '"to" must be on or after "from"' });
+  const days = Math.floor((toMs - fromMs) / 86_400_000) + 1;
+  if (days > MAX_RANGE_DAYS) {
+    return res.status(400).json({ error: `Date range too large (${days} days). Maximum is ${MAX_RANGE_DAYS} days.` });
+  }
   const orders = readData('orders.json').filter(o => o.date >= from && o.date <= to);
   const expenses = readData('expenses.json').filter(e => e.date >= from && e.date <= to);
   const { getItemCost, menuToStock } = buildCostingMaps();
