@@ -25,7 +25,7 @@ const ORDER_CREATE_SCHEMA = {
   customerPhone: { type: 'string', max: 50 },
   source: { type: 'string', enum: ['walkin', 'online'], max: 20 },
   type: { type: 'string', enum: ['dine_in', 'takeaway'], max: 20 },
-  menuType: { type: 'string', enum: ['walkin', 'community', 'online'], max: 20 },
+  menuType: { type: 'string', enum: ['walkin', 'community', 'online', 'glovo'], max: 20 },
   paymentStatus: { type: 'string', enum: ['paid', 'unpaid', 'credit'], max: 20 },
   paymentMethod: { type: 'string', enum: ['cash', 'mobile_money', 'card', 'credit', 'credit_settled'], max: 30 },
   notes: { type: 'string', max: 1000 }

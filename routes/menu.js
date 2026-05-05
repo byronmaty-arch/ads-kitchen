@@ -13,7 +13,7 @@ const MENU_SCHEMA = {
   cost: { type: 'number', min: 0, max: 10_000_000 },
   category: { type: 'string', max: 100 },
   description: { type: 'string', max: 1000 },
-  menuType: { type: 'string', enum: ['walkin', 'community', 'online', 'both'], max: 20 },
+  menuType: { type: 'string', enum: ['walkin', 'community', 'online', 'both', 'glovo'], max: 20 },
   active: { type: 'boolean' },
   hasAccompaniments: { type: 'boolean' },
   image: { type: 'string', max: 500 }

@@ -11,7 +11,24 @@
   let categories = [];
   let settings = {};
   let kitchenRefreshTimer = null;
-  let currentMenuType = 'walkin'; // 'walkin' or 'community'
+  let currentMenuType = 'walkin'; // 'walkin' | 'community' | 'glovo'
+
+  // Map a menuType code to its display name. Centralised so all badges,
+  // headers, and labels stay consistent.
+  function menuTypeLabel(t) {
+    if (t === 'community') return 'Community';
+    if (t === 'glovo')     return 'Glovo';
+    if (t === 'both')      return 'Both';
+    if (t === 'online')    return 'Online';
+    return 'Walk-in';
+  }
+  function menuTypeShort(t) {
+    if (t === 'community') return 'Comm';
+    if (t === 'glovo')     return 'Glovo';
+    if (t === 'both')      return 'Both';
+    if (t === 'online')    return 'Online';
+    return 'Walk';
+  }
 
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
   const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
@@ -375,7 +392,7 @@
           <div class="recent-order-item">
             <div>
               <span class="order-num">#${o.orderNumber}</span>
-              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${o.menuType === 'community' ? 'Comm' : 'Walk'}</span>
+              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${menuTypeShort(o.menuType)}</span>
               <span class="badge badge-${o.status}">${o.status}</span>
               <span class="badge badge-${o.paymentStatus}">${o.paymentStatus}</span>
             </div>
@@ -1112,7 +1129,7 @@
           <div class="order-card-header">
             <span class="order-num">#${o.orderNumber} ${o.table ? '• T' + o.table : ''}</span>
             <div style="display:flex;gap:4px">
-              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${o.menuType === 'community' ? 'Community' : 'Walk-in'}</span>
+              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${menuTypeLabel(o.menuType)}</span>
               <span class="badge badge-${o.status}">${o.status}</span>
             </div>
           </div>
@@ -1322,7 +1339,7 @@
           <span>Order #${order.orderNumber}</span>
           <span>${fmtDate(order.createdAt)}</span>
         </div>
-        <div style="margin-bottom:4px">${order.menuType === 'community' ? 'Community' : 'Walk-in'} • ${order.table ? 'Table ' + order.table : 'Takeaway'}${order.customerName ? ' • ' + order.customerName : ''}</div>
+        <div style="margin-bottom:4px">${menuTypeLabel(order.menuType)} • ${order.table ? 'Table ' + order.table : 'Takeaway'}${order.customerName ? ' • ' + order.customerName : ''}</div>
         <div class="receipt-divider"></div>
         <div class="receipt-items">
           ${(order.items || []).map(i => `
@@ -1365,7 +1382,7 @@
           <div class="kitchen-card-header">
             <div>
               <span class="kitchen-order-num">#${o.orderNumber}</span>
-              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${o.menuType === 'community' ? 'Community' : 'Walk-in'}</span>
+              <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${menuTypeLabel(o.menuType)}</span>
               <span class="badge badge-${o.status}">${o.status}</span>
             </div>
             <div>
@@ -1600,7 +1617,7 @@
             <span style="font-size:15px;font-weight:700;color:var(--success)">${fmt(m.price)}</span>
           </div>
           <div class="mm-card-detail">
-            <span style="color:${m.menuType === 'community' ? 'var(--warning)' : 'var(--info)'}">${m.menuType === 'community' ? 'Community' : m.menuType === 'both' ? 'Both' : 'Walk-in'}</span> • ${catMap[m.category] || 'No category'} • Cost: ${fmt(m.cost || 0)} • Margin: ${m.price > 0 ? ((1 - (m.cost || 0) / m.price) * 100).toFixed(0) : 0}%
+            <span style="color:${m.menuType === 'community' ? 'var(--warning)' : m.menuType === 'glovo' ? 'var(--success)' : 'var(--info)'}">${menuTypeLabel(m.menuType)}</span> • ${catMap[m.category] || 'No category'} • Cost: ${fmt(m.cost || 0)} • Margin: ${m.price > 0 ? ((1 - (m.cost || 0) / m.price) * 100).toFixed(0) : 0}%
             ${m.description ? '<br>' + m.description : ''}
           </div>
           <div class="mm-card-actions">
@@ -1624,6 +1641,7 @@
               <select id="me-menutype" class="input">
                 <option value="walkin" ${m.menuType === 'walkin' ? 'selected' : ''}>Walk-in</option>
                 <option value="community" ${m.menuType === 'community' ? 'selected' : ''}>Community</option>
+                <option value="glovo" ${m.menuType === 'glovo' ? 'selected' : ''}>Glovo</option>
                 <option value="both" ${m.menuType === 'both' ? 'selected' : ''}>Both</option>
               </select>
             </div>
@@ -1669,6 +1687,7 @@
             <select id="ma-menutype" class="input">
               <option value="walkin">Walk-in</option>
               <option value="community">Community</option>
+              <option value="glovo">Glovo</option>
               <option value="both">Both</option>
             </select>
           </div>
@@ -2893,7 +2912,7 @@
           res.alerts.forEach(alert => {
             if (pollRole === 'kitchen') {
               const itemList = (alert.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ');
-              const menuLabel = alert.menuType === 'community' ? 'Community' : 'Walk-in';
+              const menuLabel = menuTypeLabel(alert.menuType);
               showAlertBanner(
                 `NEW ORDER #${alert.orderNumber} (${menuLabel})${alert.table ? ' - Table ' + alert.table : ''}: ${itemList}`,
                 'new-order'
