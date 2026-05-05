@@ -219,6 +219,19 @@ Data is stored in `./data/` (auto-created from `data-seed/` on first run).
 
 ---
 
+## ⚠️ Pending Cleanup (TEMPORARY code in repo)
+
+**Added 2026-05-05 for the test→live cutover. Remove after Wednesday 2026-05-06 morning verification.**
+
+| Item | Where | Action |
+|---|---|---|
+| `lib/factory-reset.js` | new file | Delete the file outright OR keep it (harmless when no token is set) — your call |
+| `/api/admin/factory-reset` route | `server.js` (between `/api/backup/run` and the SPA fallback, framed by `⚠️ TEMPORARY` block comments) | Remove the entire block including the `require('./lib/factory-reset')` line |
+| Allow-list entry for the route | `server.js` line in the `app.use('/api', …)` middleware (`req.path === '/admin/factory-reset'`) | Remove the `\|\| req.path === '/admin/factory-reset'` clause |
+| `FACTORY_RESET_TOKEN` env var on Railway POS service | Railway dashboard | Delete the variable |
+
+Once removed, push to `main`; Railway redeploys without the endpoint. The CMO project's `CLAUDE.md` mirrors this reminder under "Deferred Items".
+
 ## What's Still In Progress / Next Steps
 
 - **Online ordering frontend** — Public API (`/api/public/*`) is built and working, but the customer-facing web app that calls it hasn't been built yet

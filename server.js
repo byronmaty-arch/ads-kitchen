@@ -56,7 +56,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // --- Session Auth Guard ---
 // Protects all /api routes except: login (/auth/*), public ordering (/public/*), and the backup trigger (own token)
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth') || req.path.startsWith('/public') || req.path === '/backup/run') return next();
+  // ⚠️ TEMPORARY (added 2026-05-05) — '/admin/factory-reset' is allow-listed here
+  // for the test→live cutover. REMOVE THIS LINE + the route handler below
+  // after Wednesday 2026-05-06 morning verification. See CLAUDE.md deferred items.
+  if (req.path.startsWith('/auth') || req.path.startsWith('/public') || req.path === '/backup/run' || req.path === '/admin/factory-reset') return next();
   requireSession(req, res, next);
 });
 
@@ -245,6 +248,40 @@ app.post('/api/backup/run', async (req, res) => {
   const result = await runBackup();
   if (result.ok) res.json(result); else res.status(500).json(result);
 });
+
+// ============================================================================
+// ⚠️ TEMPORARY ENDPOINT — TEST→LIVE CUTOVER 2026-05-05
+// ============================================================================
+// This endpoint and its allow-list entry above MUST be removed after the
+// Wednesday 2026-05-06 morning verification confirms the wipe was clean.
+// Tracked in CLAUDE.md → "Deferred Items" → "Remove temporary factory-reset
+// endpoint". The associated FACTORY_RESET_TOKEN env var on Railway should
+// also be deleted at that time.
+//
+// Auth: same pattern as /api/backup/run — timing-safe token compare via
+//       FACTORY_RESET_TOKEN env var. Body must include the confirm phrase.
+// Behaviour: see lib/factory-reset.js — wipes 7 data/log files, preserves
+//            menu/staff/categories/vendors/settings/portion-map/inventory.
+// ============================================================================
+const { runFactoryReset } = require('./lib/factory-reset');
+app.post('/api/admin/factory-reset', async (req, res) => {
+  const expected = process.env.FACTORY_RESET_TOKEN || '';
+  if (!expected) return res.status(401).json({ error: 'Unauthorized — FACTORY_RESET_TOKEN not set' });
+  const provided = (req.headers['x-reset-token'] || (req.body && req.body.token) || '').toString();
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(provided);
+  const valid = providedBuf.length === expectedBuf.length &&
+    crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!valid) return res.status(401).json({ error: 'Unauthorized' });
+  const confirm = req.body && req.body.confirm;
+  const dryRun = !!(req.body && req.body.dryRun);
+  const result = await runFactoryReset({ confirm, dryRun });
+  if (result.ok) res.json(result); else res.status(400).json(result);
+});
+// ============================================================================
+// END TEMPORARY ENDPOINT
+// ============================================================================
+
 
 // SPA fallback
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
