@@ -31,8 +31,9 @@ ads-kitchen/
 ├── lib/                       # Shared backend modules
 │   ├── db.js                  # DATA_DIR, readData/writeData, seedDataDirIfEmpty
 │   ├── auth.js                # PIN hashing, login route, rate limiter, migration
-│   ├── telegram.js            # sendTelegramMessage, reconciliation builder/scheduler
+│   ├── telegram.js            # sendTelegramMessage, reconciliation builder/scheduler (cash recon nets PO cash payments)
 │   ├── backup.js              # GitHub backup snapshot, nightly scheduler
+│   ├── stock.js               # Order → portion-map → inventory deduction/restoration helpers
 │   └── seed-defaults.js       # Fallback seed data if data-seed/ files missing
 │
 ├── routes/                    # API route modules (all export express.Router)
@@ -88,7 +89,7 @@ ads-kitchen/
 | `/api/inventory` | `routes/inventory.js` | CRUD `/`, `POST /:id/adjust`, `GET /alerts`, `GET /stock-log`, CRUD `/portion-map` |
 | `/api/vendors` | `routes/vendors.js` | CRUD `/` |
 | `/api/purchases` | `routes/purchases.js` | CRUD `/`, `POST /:id/pay`, `GET /payables` |
-| `/api/orders` | `routes/orders.js` | CRUD `/`, `POST /:id/credit-pay` |
+| `/api/orders` | `routes/orders.js` | CRUD `/`, `POST /:id/credit-pay` (POST deducts stock per portion-map; 400 on shortage. DELETE restores stock.) |
 | `/api/expenses` | `routes/expenses.js` | CRUD `/`, CRUD `/customers` |
 | `/api/staff` | `routes/staff.js` | CRUD `/` (PINs masked in responses) |
 | `/api/reports` | `routes/reports.js` | `GET /daily`, `GET /range`, `GET /reconciliation`, `POST /reconciliation/send` |
@@ -147,7 +148,8 @@ id, name, role (manager|waiter|kitchen|cashier), pin (scrypt hash), active
 - **Inventory** — Stock levels, reorder alerts, adjustment logging with reasons, menu-to-stock portion mapping for COGS calculation
 - **Procurement** — Purchase orders with vendor tracking, auto-inventory update on receipt, payment tracking, payables aging
 - **Financial reports** — Daily P&L with COGS breakdown, date-range analysis, item-level margins, waiter performance, payment method splits
-- **Cash reconciliation** — Auto-sent via Telegram at 21:00 EAT, shows cash/mobile/card breakdown and expected cash in hand
+- **Cash reconciliation** — Auto-sent via Telegram at 21:00 EAT, shows cash/mobile/card breakdown and expected cash in hand. Cash movement nets out **both** cash expenses AND cash payments made against purchase orders on that date (mobile/card PO payments excluded from cash deduction).
+- **Inventory auto-deduction** — When an order is sent (POST `/api/orders` or `/api/public/orders`), the portion map is consulted and stock is deducted in inventory units (`portionsUsed / standardPortions`). Insufficient stock returns 400 with a per-item shortage list. Deleting an order restores stock. All movements logged to `stock-log.json` with reason codes `order:<num>` / `order-delete:<num>` / `online-order:<num>`.
 - **Staff management** — Role-based access control, PIN login with scrypt hashing, brute-force rate limiting
 - **Online ordering API** — Public endpoints for customer-facing ordering app, rate-limited, server-side price validation, Telegram notification on new orders
 - **Nightly GitHub backup** — 23:30 EAT, snapshots all JSON data files to private repo
@@ -173,6 +175,10 @@ id, name, role (manager|waiter|kitchen|cashier), pin (scrypt hash), active
 7. **East Africa Time (EAT = UTC+3)** — All scheduled tasks (reconciliation, backup) use EAT. Date calculations in `todayInEAT()` function.
 
 8. **Seed data strategy** — `data-seed/` contains templates. On first boot, `seedDataDirIfEmpty()` copies them to `data/`. If seed files don't exist either, `seed-defaults.js` creates them in memory.
+
+9. **Stock deducted at order creation, not at "preparing"** — When the waiter sends an order to the kitchen, inventory is deducted immediately and the request is rejected with HTTP 400 if any line lacks stock. Considered the alternative of deducting only when the chef marks the ticket "preparing"; rejected because the customer would already be committed before the system noticed the stock-out. Restoration on order delete keeps the books honest. Single helper module: [lib/stock.js](lib/stock.js).
+
+10. **One-time POS event bindings via `posInitialized` flag** — `loadOrderBuilder()` previously re-bound cart `+/-`, menu-type toggle, and search listeners on every login. Because logout doesn't reload the page, repeated logins stacked listeners and made the cart counter advance N× per click. A module-level `posInitialized` boolean now gates the bindings to one-time setup; render functions still re-run each call.
 
 ---
 
@@ -217,7 +223,6 @@ Data is stored in `./data/` (auto-created from `data-seed/` on first run).
 
 - **Online ordering frontend** — Public API (`/api/public/*`) is built and working, but the customer-facing web app that calls it hasn't been built yet
 - **Receipt printing** — Receipt generation UI exists but physical printer integration not connected
-- **Inventory auto-deduction** — Portion map exists but stock isn't auto-decremented when orders are served (currently manual adjustment)
 - **Marketing/analytics** — No customer analytics, loyalty tracking, or marketing automation yet
 - **Multi-branch support** — Currently single-restaurant; Byron has 3 branches that could eventually share the system
 - **Testing** — No automated test suite; all testing is manual via API + UI

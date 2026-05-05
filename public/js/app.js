@@ -392,13 +392,17 @@
   let posClockTimer = null;
   let posSearchTerm = '';
   let posActiveCategory = 'all';
+  let posInitialized = false; // guard one-time event bindings against re-login double-binding
 
   function loadOrderBuilder() {
-    initMenuTypeToggle();
+    if (!posInitialized) {
+      initMenuTypeToggle();
+      initCartEvents();
+      initPosSearch();
+      posInitialized = true;
+    }
     renderPosCategories();
     renderMenuGrid();
-    initCartEvents();
-    initPosSearch();
     updatePosWaiter();
     startPosClock();
   }
@@ -896,6 +900,9 @@
           </div>` : ''}
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--danger)">
             <span>Cash Expenses (${recon.transactions.expenseCount})</span><span>− ${fmt(recon.cashExpenses)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--danger)">
+            <span>PO Cash Payments (${recon.transactions.purchasePaymentCount || 0})</span><span>− ${fmt(recon.cashPurchasePayments || 0)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;padding-top:8px;border-top:1px solid var(--border)">
             <span>Expected Cash in Hand</span><span style="color:var(--success)">${fmt(recon.expectedCashInHand)}</span>
@@ -2491,6 +2498,7 @@
           <h4>Cash Movement</h4>
           <div class="report-row"><span class="label">Cash Sales</span><span class="value positive">${fmt(r.cashSales)}</span></div>
           <div class="report-row"><span class="label">Cash Expenses (${r.transactions.expenseCount})</span><span class="value negative">${fmt(r.cashExpenses)}</span></div>
+          <div class="report-row"><span class="label">PO Cash Payments (${r.transactions.purchasePaymentCount || 0})</span><span class="value negative">${fmt(r.cashPurchasePayments || 0)}</span></div>
           <div class="report-row" style="font-weight:700"><span class="label">Expected Cash in Hand</span><span class="value">${fmt(r.expectedCashInHand)}</span></div>
         </div>
       `;

@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const { readData, writeData } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
 const { validate } = require('../lib/validate');
+const { computeRequiredStock, checkAvailability, applyStockDelta, formatShortageMessage } = require('../lib/stock');
 const router = express.Router();
 
 const ORDER_ITEM_SHAPE = {
@@ -109,11 +110,17 @@ router.post('/', (req, res) => {
     orderNumber = orders.filter(o => o.date === today).length + 1;
   }
 
+  // Stock check + deduction (skips items without portion-map entry)
+  const required = computeRequiredStock(body.items);
+  const avail = checkAvailability(required);
+  if (!avail.ok) return res.status(400).json({ error: formatShortageMessage(avail.shortages), shortages: avail.shortages });
+
   const order = {
     id: uuidv4(), orderNumber, date: today,
     createdAt: now.toISOString(), status: 'new', paymentStatus: 'unpaid',
     ...body
   };
+  applyStockDelta(required, -1, `order:${order.orderNumber}`, req.user);
   orders.push(order);
   writeData('orders.json', orders);
   res.status(201).json(order);
@@ -149,6 +156,9 @@ router.delete('/:id', requireRole(['manager']), (req, res) => {
   const orders = readData('orders.json');
   const target = orders.find(o => o.id === req.params.id);
   if (!target) return res.status(404).json({ error: 'Not found' });
+  // Restore stock that was deducted at order creation
+  const required = computeRequiredStock(target.items);
+  applyStockDelta(required, +1, `order-delete:${target.orderNumber}`, req.user);
   const log = readData('audit-log.json');
   log.unshift({
     id: uuidv4(), action: 'order.delete', timestamp: new Date().toISOString(),

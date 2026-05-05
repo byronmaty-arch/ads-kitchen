@@ -3,6 +3,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readData, writeData, readConfig } = require('../lib/db');
 const { sendTelegramMessage } = require('../lib/telegram');
+const { computeRequiredStock, checkAvailability, applyStockDelta, formatShortageMessage } = require('../lib/stock');
 const router = express.Router();
 
 // Rate limiter: max 8 order submissions per IP per 10 min
@@ -62,6 +63,11 @@ router.post('/orders', rateLimitOrders, (req, res) => {
   const deliveryFee = deliveryType === 'delivery' ? 5000 : 0;
   const total = subtotal + deliveryFee;
 
+  // Stock check + deduction (skips items without portion-map entry)
+  const required = computeRequiredStock(validatedItems);
+  const avail = checkAvailability(required);
+  if (!avail.ok) return res.status(400).json({ error: formatShortageMessage(avail.shortages), shortages: avail.shortages });
+
   const orders = readData('orders.json');
   const now = new Date();
   const today = now.toISOString().split('T')[0];
@@ -75,6 +81,7 @@ router.post('/orders', rateLimitOrders, (req, res) => {
     items: validatedItems, subtotal, deliveryFee, total,
     paymentMethod: 'mobile_money', notes: (notes || '').toString().slice(0, 500)
   };
+  applyStockDelta(required, -1, `online-order:${order.orderNumber}`, { staffId: null, staffName: 'Online' });
   orders.push(order);
   writeData('orders.json', orders);
 
