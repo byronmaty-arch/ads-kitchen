@@ -226,9 +226,11 @@ Data is stored in `./data/` (auto-created from `data-seed/` on first run).
 | Item | Where | Action |
 |---|---|---|
 | `lib/factory-reset.js` | new file | Delete the file outright OR keep it (harmless when no token is set) — your call |
-| `/api/admin/factory-reset` route | `server.js` (between `/api/backup/run` and the SPA fallback, framed by `⚠️ TEMPORARY` block comments) | Remove the entire block including the `require('./lib/factory-reset')` line |
-| Allow-list entry for the route | `server.js` line in the `app.use('/api', …)` middleware (`req.path === '/admin/factory-reset'`) | Remove the `\|\| req.path === '/admin/factory-reset'` clause |
-| `FACTORY_RESET_TOKEN` env var on Railway POS service | Railway dashboard | Delete the variable |
+| `lib/import-glovo-menu.js` | new file | Delete the file outright OR keep it (harmless when no token is set) — your call |
+| `/api/admin/factory-reset` route | `server.js` (framed by `⚠️ TEMPORARY` block comments) | Remove the entire block including the `require('./lib/factory-reset')` line |
+| `/api/admin/import-glovo-menu` route | `server.js` (framed by `⚠️ TEMPORARY ENDPOINT — GLOVO MENU IMPORT` block) | Remove the entire block including the `require('./lib/import-glovo-menu')` line |
+| Allow-list entries for both routes | `server.js` line in the `app.use('/api', …)` middleware | Remove the two `\|\| req.path === '/admin/...'` clauses |
+| `FACTORY_RESET_TOKEN` env var on Railway POS service | Railway dashboard | Delete the variable (used by both endpoints) |
 
 Once removed, push to `main`; Railway redeploys without the endpoint. The CMO project's `CLAUDE.md` mirrors this reminder under "Deferred Items".
 

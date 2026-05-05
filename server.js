@@ -56,10 +56,17 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // --- Session Auth Guard ---
 // Protects all /api routes except: login (/auth/*), public ordering (/public/*), and the backup trigger (own token)
 app.use('/api', (req, res, next) => {
-  // ⚠️ TEMPORARY (added 2026-05-05) — '/admin/factory-reset' is allow-listed here
-  // for the test→live cutover. REMOVE THIS LINE + the route handler below
-  // after Wednesday 2026-05-06 morning verification. See CLAUDE.md deferred items.
-  if (req.path.startsWith('/auth') || req.path.startsWith('/public') || req.path === '/backup/run' || req.path === '/admin/factory-reset') return next();
+  // ⚠️ TEMPORARY (added 2026-05-05) — '/admin/factory-reset' and
+  // '/admin/import-glovo-menu' are allow-listed here for the test→live cutover.
+  // REMOVE the two extra clauses + the route handlers below after Wednesday
+  // 2026-05-06 morning verification. See CLAUDE.md "Pending Cleanup".
+  if (
+    req.path.startsWith('/auth') ||
+    req.path.startsWith('/public') ||
+    req.path === '/backup/run' ||
+    req.path === '/admin/factory-reset' ||
+    req.path === '/admin/import-glovo-menu'
+  ) return next();
   requireSession(req, res, next);
 });
 
@@ -280,6 +287,34 @@ app.post('/api/admin/factory-reset', async (req, res) => {
 });
 // ============================================================================
 // END TEMPORARY ENDPOINT
+// ============================================================================
+
+// ============================================================================
+// ⚠️ TEMPORARY ENDPOINT — GLOVO MENU IMPORT 2026-05-05
+// ============================================================================
+// One-shot importer for the AD's Kitchen Glovo menu items. Same FACTORY_RESET_TOKEN
+// auth as /api/admin/factory-reset (deliberately reuses the token to avoid
+// scattering more secrets). REMOVE THIS BLOCK + the allow-list entry above
+// after Wednesday 2026-05-06 morning verification confirms the import landed.
+// See CLAUDE.md "Pending Cleanup".
+// ============================================================================
+const { runImportGlovoMenu } = require('./lib/import-glovo-menu');
+app.post('/api/admin/import-glovo-menu', async (req, res) => {
+  const expected = process.env.FACTORY_RESET_TOKEN || '';
+  if (!expected) return res.status(401).json({ error: 'Unauthorized — FACTORY_RESET_TOKEN not set' });
+  const provided = (req.headers['x-reset-token'] || (req.body && req.body.token) || '').toString();
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(provided);
+  const valid = providedBuf.length === expectedBuf.length &&
+    crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!valid) return res.status(401).json({ error: 'Unauthorized' });
+  const confirm = req.body && req.body.confirm;
+  const dryRun = !!(req.body && req.body.dryRun);
+  const result = await runImportGlovoMenu({ confirm, dryRun });
+  if (result.ok) res.json(result); else res.status(400).json(result);
+});
+// ============================================================================
+// END TEMPORARY ENDPOINT (GLOVO IMPORT)
 // ============================================================================
 
 
