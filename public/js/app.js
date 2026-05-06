@@ -69,6 +69,11 @@
     return 'UGX ' + Number(amount || 0).toLocaleString('en-UG');
   }
 
+  function fmtQty(n) {
+    if (n == null || isNaN(n)) return '0';
+    return String(Math.round(Number(n) * 1000) / 1000);
+  }
+
   function fmtTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -1449,7 +1454,7 @@
               ${i.standardPortions ? `<div class="inv-portion">${i.standardPortions} portions @ ${fmt(i.costPerPortion)}/portion</div>` : ''}
             </div>
             <div class="inv-qty">
-              <div class="inv-qty-num ${i.quantity <= i.reorderLevel ? 'low' : ''}">${i.quantity}</div>
+              <div class="inv-qty-num ${i.quantity <= i.reorderLevel ? 'low' : ''}">${fmtQty(i.quantity)}</div>
               <div class="inv-qty-unit">${i.unit}</div>
             </div>
             <div class="inv-actions">
@@ -1466,10 +1471,18 @@
       // Adjust buttons
       $$('.inv-adjust-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          const item = inv.find(x => x.id === btn.dataset.id);
+          const currentQty = Number(item?.quantity || 0);
           openModal(`Adjust: ${btn.dataset.name}`, `
+            <div class="form-group" style="font-size:13px;color:var(--text-muted)">
+              Current: ${fmtQty(currentQty)} ${item?.unit || ''}
+            </div>
             <div class="form-group">
-              <label>Quantity (+/-)</label>
-              <input type="number" id="adj-qty" class="input" placeholder="e.g. 5 or -3">
+              <label><input type="checkbox" id="adj-mode-set"> Set exact quantity (instead of +/-)</label>
+            </div>
+            <div class="form-group">
+              <label id="adj-qty-label">Quantity (+/-)</label>
+              <input type="number" step="any" id="adj-qty" class="input" placeholder="e.g. 5 or -3">
             </div>
             <div class="form-group">
               <label>Reason</label>
@@ -1483,11 +1496,18 @@
             </div>
             <button class="btn btn-primary btn-block" id="adj-save">Save Adjustment</button>
           `);
+          $('#adj-mode-set').addEventListener('change', (e) => {
+            $('#adj-qty-label').textContent = e.target.checked ? 'New quantity (absolute)' : 'Quantity (+/-)';
+            $('#adj-qty').placeholder = e.target.checked ? 'e.g. 0 or 12.5' : 'e.g. 5 or -3';
+          });
           $('#adj-save').addEventListener('click', async () => {
-            const qty = parseInt($('#adj-qty').value);
-            if (isNaN(qty) || qty === 0) return toast('Enter a valid quantity');
+            const raw = parseFloat($('#adj-qty').value);
+            if (isNaN(raw)) return toast('Enter a valid quantity');
+            const setMode = $('#adj-mode-set').checked;
+            const adjustment = setMode ? (raw - currentQty) : raw;
+            if (adjustment === 0) return toast('No change');
             try {
-              await api(`/inventory/${btn.dataset.id}/adjust`, { method: 'POST', body: { adjustment: qty, reason: $('#adj-reason').value } });
+              await api(`/inventory/${btn.dataset.id}/adjust`, { method: 'POST', body: { adjustment, reason: $('#adj-reason').value } });
               closeModal();
               toast('Stock adjusted');
               loadInventory();
