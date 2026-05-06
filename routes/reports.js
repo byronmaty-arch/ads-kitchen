@@ -179,7 +179,8 @@ router.get('/balance-sheet', (req, res) => {
   // Filter everything up to asOfDate
   const ordersToDate = orders.filter(o => o.date <= asOfDate);
   const expensesToDate = expenses.filter(e => e.date <= asOfDate);
-  const purchasesToDate = purchases.filter(p => p.date <= asOfDate);
+  // PO date is a full ISO timestamp; compare just the YYYY-MM-DD prefix.
+  const purchasesToDate = purchases.filter(p => (p.date || '').slice(0, 10) <= asOfDate);
 
   // --- ASSETS ---
 
@@ -211,7 +212,7 @@ router.get('/balance-sheet', (req, res) => {
   // Credit partial payments received
   creditOrders.forEach(o => {
     (o.creditPayments || []).forEach(p => {
-      if (p.date <= asOfDate) {
+      if ((p.date || '').slice(0, 10) <= asOfDate) {
         creditPaymentsReceived += p.amount || 0;
         const method = p.method || 'cash';
         if (method === 'cash') cashCollected += p.amount || 0;
