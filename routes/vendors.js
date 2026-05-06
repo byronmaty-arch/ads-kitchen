@@ -13,6 +13,7 @@ const VENDOR_SCHEMA = {
   email: { type: 'string', max: 200 },
   address: { type: 'string', max: 500 },
   category: { type: 'string', max: 100 },
+  items: { type: 'array', maxLen: 50, of: { type: 'string', max: 100 } },
   rating: { type: 'number', min: 0, max: 5 },
   notes: { type: 'string', max: 1000 }
 };
