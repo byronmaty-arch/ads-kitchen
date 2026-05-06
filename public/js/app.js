@@ -1902,12 +1902,12 @@
       $('#po-status-filter').onchange = loadPurchases;
 
       $('#btn-add-po').onclick = async () => {
-        const inv = await api('/inventory');
+        const [inv, freshVendors] = await Promise.all([api('/inventory'), api('/vendors')]);
         openModal('New Purchase Order', `
           <div class="form-group"><label>Vendor</label>
             <select id="po-vendor" class="input">
               <option value="">Select vendor...</option>
-              ${vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
+              ${freshVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
             </select>
           </div>
           <div id="po-items-container">
@@ -1957,7 +1957,7 @@
           });
           const totalAmount = items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
           await api('/purchases', { method: 'POST', body: {
-            vendorId: $('#po-vendor').value, vendorName: vendors.find(v => v.id === $('#po-vendor').value)?.name,
+            vendorId: $('#po-vendor').value, vendorName: freshVendors.find(v => v.id === $('#po-vendor').value)?.name,
             items, totalAmount, creditDays: parseInt($('#po-credit-days').value) || 0, notes: $('#po-notes').value
           }});
           closeModal(); toast('PO created'); loadPurchases();
