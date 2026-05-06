@@ -3,7 +3,7 @@
 //   - /api/*    → always network, never cached (live data)
 //   - HTML      → network-first, fall back to cache (fresh when online)
 //   - Static    → cache-first (instant load, background-updated)
-const CACHE_NAME = 'ads-kitchen-v5';
+const CACHE_NAME = 'ads-kitchen-v6';
 const STATIC_ASSETS = [
   '/',
   '/css/style.css',

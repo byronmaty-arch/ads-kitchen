@@ -537,7 +537,7 @@
   }
 
   // --- Accompaniments (Local Stews + Community menu items) ---
-  const ACCOMPANIMENTS = ['Matooke', 'Rice', 'Posho', 'Cassava', 'Yams', 'Pumpkin', 'Greens'];
+  const ACCOMPANIMENTS = ['Matooke', 'Rice', 'Posho', 'Cassava', 'Yams', 'Sweet Potatoes', 'Pumpkin', 'Greens'];
   const MAX_ACCOMPANIMENTS = 5;
 
   function itemNeedsAccompaniments(item) {
