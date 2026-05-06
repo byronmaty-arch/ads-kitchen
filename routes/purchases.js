@@ -72,7 +72,22 @@ router.put('/:id', requireRole(MANAGER_CASHIER), (req, res) => {
     const inv = readData('inventory.json');
     purchases[idx].items.forEach(poItem => {
       const invIdx = inv.findIndex(i => i.id === poItem.inventoryId);
-      if (invIdx !== -1) inv[invIdx].quantity += poItem.quantity;
+      if (invIdx === -1) return;
+      // Weighted-average cost so inventory value increases by exactly
+      // poItem.quantity * poItem.unitCost — keeps Inventory ↔ AP in lockstep.
+      const oldQty = Number(inv[invIdx].quantity || 0);
+      const oldCost = Number(inv[invIdx].costPerUnit || 0);
+      const addQty = Number(poItem.quantity || 0);
+      const addCost = Number(poItem.unitCost || 0);
+      const newQty = oldQty + addQty;
+      if (newQty > 0 && addQty > 0) {
+        inv[invIdx].costPerUnit = Math.round(((oldQty * oldCost) + (addQty * addCost)) / newQty);
+      }
+      inv[invIdx].quantity = newQty;
+      // Recompute portion cost if portion size is set
+      if (inv[invIdx].standardPortions && inv[invIdx].standardPortions > 0) {
+        inv[invIdx].costPerPortion = Math.round(inv[invIdx].costPerUnit / inv[invIdx].standardPortions);
+      }
     });
     writeData('inventory.json', inv);
   }

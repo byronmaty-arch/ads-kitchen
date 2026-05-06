@@ -248,7 +248,12 @@ router.get('/balance-sheet', (req, res) => {
   });
   const retainedEarnings = totalRevenue - totalCogs - totalExpensesPaid;
 
-  const totalEquity = retainedEarnings;
+  // Opening Balance Equity = the balancing plug for whatever the system
+  // can't derive from recorded transactions: seed inventory value with
+  // no offsetting equity, plus any historical Inventory↔AP drift from
+  // PO receives that pre-date weighted-average costing.
+  const openingBalanceEquity = totalAssets - totalLiabilities - retainedEarnings;
+  const totalEquity = retainedEarnings + openingBalanceEquity;
 
   res.json({
     asOfDate,
@@ -272,6 +277,7 @@ router.get('/balance-sheet', (req, res) => {
     },
     equity: {
       retainedEarnings: Math.round(retainedEarnings),
+      openingBalanceEquity: Math.round(openingBalanceEquity),
       total: Math.round(totalEquity)
     },
     totalLiabilitiesAndEquity: Math.round(totalLiabilities + totalEquity),

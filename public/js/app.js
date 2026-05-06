@@ -2617,6 +2617,10 @@
             <div class="report-row" style="font-size:12px"><span class="label">Less: Expenses</span><span class="value negative">(${fmt(r.summary.totalExpenses)})</span></div>
             <div class="report-row" style="font-size:12px;font-weight:600"><span class="label">Net Income</span><span class="value ${r.summary.netIncome >= 0 ? 'positive' : 'negative'}">${fmt(r.summary.netIncome)}</span></div>
           </div>
+          <div class="report-row" title="Implied starting capital — captures seed inventory and any pre-existing Inventory ↔ AP drift">
+            <span class="label">Opening Balance Equity</span>
+            <span class="value">${fmt(eq.openingBalanceEquity || 0)}</span>
+          </div>
           <div class="report-row" style="font-weight:700;border-top:2px solid var(--border-light);padding-top:8px">
             <span class="label">Total Equity</span>
             <span class="value">${fmt(eq.total)}</span>
