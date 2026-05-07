@@ -37,6 +37,12 @@
   function isWaiter() { return currentUser && currentUser.role === 'waiter'; }
   function myStaffParam() { return isWaiter() ? `staffId=${currentUser.id}` : ''; }
 
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   // --- API Helper ---
   async function api(path, opts = {}) {
     const headers = {
@@ -1130,10 +1136,11 @@
     $('#orders-list').innerHTML = orders.length === 0
       ? '<div class="empty-state"><span class="material-icons-round">receipt_long</span><p>No orders found</p></div>'
       : orders.map(o => `
-        <div class="order-card" data-id="${o.id}">
+        <div class="order-card${o.voided ? ' order-card-voided' : ''}" data-id="${o.id}" ${o.voided ? 'style="opacity:0.65"' : ''}>
           <div class="order-card-header">
             <span class="order-num">#${o.orderNumber} ${o.table ? '• T' + o.table : ''}</span>
             <div style="display:flex;gap:4px">
+              ${o.voided ? '<span class="badge" style="background:var(--danger);color:#fff">VOIDED</span>' : ''}
               <span class="badge ${o.menuType === 'community' ? 'badge-preparing' : 'badge-new'}">${menuTypeLabel(o.menuType)}</span>
               <span class="badge badge-${o.status}">${o.status}</span>
             </div>
@@ -1142,20 +1149,26 @@
           <div class="order-card-customer">
             <span class="material-icons-round" style="font-size:14px;color:var(--text-dim)">person</span>
             <span style="flex:1;font-size:12px;color:${o.customerName ? 'var(--text)' : 'var(--text-dim)'}">${o.customerName || 'No customer name'}</span>
-            <button class="btn-icon edit-customer-btn" data-id="${o.id}" data-name="${o.customerName || ''}" data-table="${o.table || ''}" data-type="${o.type || 'dine_in'}" title="Edit details">
+            ${!o.voided ? `<button class="btn-icon edit-customer-btn" data-id="${o.id}" data-name="${o.customerName || ''}" data-table="${o.table || ''}" data-type="${o.type || 'dine_in'}" title="Edit details">
               <span class="material-icons-round" style="font-size:16px">edit</span>
-            </button>
+            </button>` : ''}
             ${o.staffName ? `<span style="font-size:11px;color:var(--text-dim);margin-left:4px">by ${o.staffName}</span>` : ''}
           </div>
           <div class="order-card-footer">
-            <span class="order-card-total">${fmt(o.total)}</span>
+            <span class="order-card-total" ${o.voided ? 'style="text-decoration:line-through"' : ''}>${fmt(o.total)}</span>
             <div style="display:flex;gap:4px;align-items:center">
               <span class="badge badge-${o.paymentStatus === 'credit' ? 'credit' : o.paymentStatus}">${o.paymentStatus === 'credit' ? 'CREDIT' : o.paymentStatus}</span>
-              ${o.paymentStatus === 'credit' ? `<span style="font-size:11px;color:var(--info)">Bal: ${fmt((o.total||0)-(o.creditAmountPaid||0))}</span>` : ''}
+              ${o.paymentStatus === 'credit' && !o.voided ? `<span style="font-size:11px;color:var(--info)">Bal: ${fmt((o.total||0)-(o.creditAmountPaid||0))}</span>` : ''}
               <span style="font-size:12px;color:var(--text-muted)">${fmtTime(o.createdAt)}</span>
             </div>
           </div>
-          ${!isWaiter() ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          ${o.voided ? `
+            <div style="margin-top:10px;padding:8px 10px;background:rgba(220,53,69,0.08);border-left:3px solid var(--danger);border-radius:4px;font-size:12px">
+              <div style="color:var(--danger);font-weight:600;margin-bottom:2px">Voided ${fmtTime(o.voidedAt)} by ${o.voidedBy ? o.voidedBy.staffName : 'admin'}</div>
+              <div style="color:var(--text-muted)">Reason: ${escapeHtml(o.voidReason || '—')}</div>
+            </div>
+          ` : ''}
+          ${!isWaiter() && !o.voided ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             ${o.paymentStatus === 'unpaid' ? `
               <button class="btn btn-sm btn-success pay-order-btn" data-id="${o.id}" data-method="cash">Cash</button>
               <button class="btn btn-sm btn-warning pay-order-btn" data-id="${o.id}" data-method="mobile_money">M-Money</button>
@@ -1167,6 +1180,7 @@
             ` : ''}
             <button class="btn btn-sm btn-outline view-receipt-btn" data-id="${o.id}">Receipt</button>
             ${o.status === 'served' || o.status === 'ready' ? `<button class="btn btn-sm btn-primary complete-order-btn" data-id="${o.id}">Complete</button>` : ''}
+            ${isAdmin() ? `<button class="btn btn-sm btn-outline void-order-btn" data-id="${o.id}" data-order="${o.orderNumber}" style="color:var(--danger);border-color:var(--danger);margin-left:auto">Void</button>` : ''}
           </div>` : ''}
         </div>
       `).join('');
@@ -1306,6 +1320,39 @@
             amount, method: $('#credit-pay-method').value, note: $('#credit-pay-note').value
           }});
           closeModal(); toast('Payment collected!'); loadOrders();
+        });
+      });
+    });
+
+    // Void order buttons (admin only)
+    $$('.void-order-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderId = btn.dataset.id;
+        const orderNum = btn.dataset.order;
+        openModal(`Void Order #${orderNum}`, `
+          <div style="text-align:center;padding:8px 0 12px">
+            <span class="material-icons-round" style="font-size:40px;color:var(--danger);margin-bottom:8px">block</span>
+            <p style="margin-bottom:4px"><strong>Voiding will:</strong></p>
+            <ul style="text-align:left;margin:8px 24px 12px;color:var(--text-muted);font-size:13px;line-height:1.6">
+              <li>Restore deducted stock</li>
+              <li>Exclude this bill from revenue, receivables &amp; the daily reconciliation</li>
+              <li>Keep an audit-log entry visible to admin</li>
+            </ul>
+            <p style="font-size:12px;color:var(--danger)">If cash was already collected, refund the customer separately.</p>
+          </div>
+          <div class="form-group"><label>Reason (required)</label>
+            <textarea id="void-reason" class="input" rows="3" placeholder="e.g. Wrong items charged, duplicate ticket..."></textarea>
+          </div>
+          <button class="btn btn-danger btn-block" id="void-confirm">Confirm Void</button>
+        `);
+        setTimeout(() => $('#void-reason')?.focus(), 100);
+        $('#void-confirm').addEventListener('click', async () => {
+          const reason = $('#void-reason').value.trim();
+          if (!reason) { toast('Please enter a reason', 'error'); return; }
+          try {
+            await api(`/orders/${orderId}/void`, { method: 'POST', body: { reason } });
+            closeModal(); toast(`Order #${orderNum} voided`); loadOrders();
+          } catch (e) { toast('Error: ' + e.message, 'error'); }
         });
       });
     });
@@ -1818,13 +1865,14 @@
         ? '<div class="empty-state"><p>No purchase orders</p></div>'
         : purchases.map(p => {
           const balance = (p.totalAmount || 0) - (p.amountPaid || 0);
-          const isOverdue = p.dueDate && p.dueDate < today && p.paymentStatus !== 'paid';
+          const isOverdue = !p.voided && p.dueDate && p.dueDate < today && p.paymentStatus !== 'paid';
           const payStatus = p.paymentStatus || 'unpaid';
           return `
-          <div class="po-card ${isOverdue ? 'po-overdue' : ''}">
+          <div class="po-card ${isOverdue ? 'po-overdue' : ''}" ${p.voided ? 'style="opacity:0.65"' : ''}>
             <div class="po-card-header">
               <h4>${p.poNumber}</h4>
               <div style="display:flex;gap:6px;align-items:center">
+                ${p.voided ? '<span class="badge" style="background:var(--danger);color:#fff">VOIDED</span>' : ''}
                 <span class="badge badge-${p.status}">${p.status}</span>
                 <span class="badge badge-pay-${payStatus}">${payStatus === 'partial' ? 'Partial' : payStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
               </div>
@@ -1832,7 +1880,7 @@
             <div class="po-card-detail">
               Vendor: ${vendorMap[p.vendorId] || p.vendorName || 'N/A'}<br>
               Date: ${fmtDate(p.date)}${p.creditDays ? ` · Credit: ${p.creditDays} days` : ''}<br>
-              ${p.dueDate ? `Due: <span style="color:${isOverdue ? 'var(--danger);font-weight:700' : 'var(--text-muted)'}">${fmtDate(p.dueDate)}${isOverdue ? ' (OVERDUE)' : ''}</span><br>` : ''}
+              ${p.dueDate && !p.voided ? `Due: <span style="color:${isOverdue ? 'var(--danger);font-weight:700' : 'var(--text-muted)'}">${fmtDate(p.dueDate)}${isOverdue ? ' (OVERDUE)' : ''}</span><br>` : ''}
               Items: ${(p.items || []).map(i => `${i.quantity} ${i.name}`).join(', ')}<br>
               Total: ${fmt(p.totalAmount || 0)}${payStatus !== 'unpaid' ? ` · Paid: ${fmt(p.amountPaid || 0)} · Balance: ${fmt(balance)}` : ''}
             </div>
@@ -1844,7 +1892,13 @@
                 `).join('')}
               </div>
             ` : ''}
-            <div class="po-card-actions">
+            ${p.voided ? `
+              <div style="margin-top:10px;padding:8px 10px;background:rgba(220,53,69,0.08);border-left:3px solid var(--danger);border-radius:4px;font-size:12px">
+                <div style="color:var(--danger);font-weight:600;margin-bottom:2px">Voided ${fmtDate(p.voidedAt)} by ${p.voidedBy ? p.voidedBy.staffName : 'admin'}</div>
+                <div style="color:var(--text-muted)">Reason: ${escapeHtml(p.voidReason || '—')}</div>
+              </div>
+            ` : ''}
+            ${!p.voided ? `<div class="po-card-actions">
               ${p.status === 'pending' ? `
                 <button class="btn btn-sm btn-success po-receive-btn" data-id="${p.id}">Mark Received</button>
                 <button class="btn btn-sm btn-outline" style="color:var(--danger)" data-id="${p.id}" onclick="fetch('/api/purchases/${p.id}',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})}).then(()=>loadPurchases())">Cancel</button>
@@ -1852,7 +1906,8 @@
               ${p.status !== 'cancelled' && payStatus !== 'paid' ? `
                 <button class="btn btn-sm btn-primary po-pay-btn" data-id="${p.id}" data-balance="${balance}" data-po="${p.poNumber}">Record Payment</button>
               ` : ''}
-            </div>
+              ${isAdmin() ? `<button class="btn btn-sm btn-outline void-po-btn" data-id="${p.id}" data-po="${p.poNumber}" data-status="${p.status}" data-paid="${p.amountPaid || 0}" style="color:var(--danger);border-color:var(--danger);margin-left:auto">Void</button>` : ''}
+            </div>` : ''}
           </div>
         `}).join('');
 
@@ -1860,6 +1915,43 @@
         btn.addEventListener('click', async () => {
           await api(`/purchases/${btn.dataset.id}`, { method: 'PUT', body: { status: 'received' } });
           toast('Purchase received & stock updated'); loadPurchases(); loadPayables(); loadInventory();
+        });
+      });
+
+      // Void PO buttons (admin only)
+      $$('.void-po-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const poId = btn.dataset.id;
+          const poNum = btn.dataset.po;
+          const status = btn.dataset.status;
+          const paid = parseFloat(btn.dataset.paid || '0');
+          const willReverseInventory = status === 'received';
+          const blockedByPayments = paid > 0;
+          openModal(`Void ${poNum}`, `
+            <div style="text-align:center;padding:8px 0 12px">
+              <span class="material-icons-round" style="font-size:40px;color:var(--danger);margin-bottom:8px">block</span>
+              <p style="margin-bottom:4px"><strong>Voiding will:</strong></p>
+              <ul style="text-align:left;margin:8px 24px 12px;color:var(--text-muted);font-size:13px;line-height:1.6">
+                <li>Remove this PO from payables &amp; the balance sheet</li>
+                ${willReverseInventory ? '<li><strong>Reverse the inventory increase</strong> from the receipt (rejected if stock has been consumed below the received quantity)</li>' : ''}
+                <li>Keep an audit-log entry visible to admin</li>
+              </ul>
+              ${blockedByPayments ? `<p style="font-size:12px;color:var(--danger)">This PO has ${fmt(paid)} recorded as paid. Reverse the payment(s) before voiding.</p>` : ''}
+            </div>
+            <div class="form-group"><label>Reason (required)</label>
+              <textarea id="void-po-reason" class="input" rows="3" placeholder="e.g. Wrong vendor, duplicate PO, qty error..." ${blockedByPayments ? 'disabled' : ''}></textarea>
+            </div>
+            <button class="btn btn-danger btn-block" id="void-po-confirm" ${blockedByPayments ? 'disabled' : ''}>Confirm Void</button>
+          `);
+          if (!blockedByPayments) setTimeout(() => $('#void-po-reason')?.focus(), 100);
+          $('#void-po-confirm').addEventListener('click', async () => {
+            const reason = $('#void-po-reason').value.trim();
+            if (!reason) { toast('Please enter a reason', 'error'); return; }
+            try {
+              await api(`/purchases/${poId}/void`, { method: 'POST', body: { reason } });
+              closeModal(); toast(`${poNum} voided`); loadPurchases(); loadPayables(); loadInventory();
+            } catch (e) { toast('Error: ' + e.message, 'error'); }
+          });
         });
       });
 
@@ -2760,6 +2852,8 @@
 
   // ===== SYSTEM AUDIT LOG =====
   let auditFilter = 'all';
+  let auditSource = 'login';
+  let auditVoidFilter = 'all';
 
   function parseDeviceUA(ua) {
     if (!ua) return 'Unknown device';
@@ -2787,10 +2881,23 @@
   async function loadAuditLog() {
     const el = $('#audit-log-list');
     if (!el) return;
+
+    // Wire the source toggle once
+    $$('.audit-source-btn').forEach(btn => {
+      btn.onclick = () => {
+        auditSource = btn.dataset.source;
+        $$('.audit-source-btn').forEach(b => b.classList.toggle('active', b === btn));
+        $('#audit-toolbar-login').classList.toggle('hidden', auditSource !== 'login');
+        $('#audit-toolbar-voids').classList.toggle('hidden', auditSource !== 'voids');
+        loadAuditLog();
+      };
+    });
+
+    if (auditSource === 'voids') return loadVoidAudit();
+
     try {
       const log = await api('/audit/login-log');
 
-      // Filter buttons
       $$('.audit-filter').forEach(btn => {
         btn.onclick = () => {
           auditFilter = btn.dataset.filter;
@@ -2811,6 +2918,69 @@
     } catch (e) {
       el.innerHTML = `<div class="empty-state"><p>Failed to load audit log</p></div>`;
     }
+  }
+
+  async function loadVoidAudit() {
+    const el = $('#audit-log-list');
+    try {
+      const log = await api('/audit/log');
+      $$('.audit-void-filter').forEach(btn => {
+        btn.onclick = () => {
+          auditVoidFilter = btn.dataset.filter;
+          $$('.audit-void-filter').forEach(b => b.classList.toggle('active', b === btn));
+          renderVoidAudit(log);
+        };
+      });
+      renderVoidAudit(log);
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><p>Failed to load void audit</p></div>`;
+    }
+  }
+
+  function renderVoidAudit(log) {
+    const el = $('#audit-log-list');
+    let entries = log.filter(e => e.action === 'order.void' || e.action === 'purchase.void');
+    if (auditVoidFilter !== 'all') entries = entries.filter(e => e.action === auditVoidFilter);
+
+    if (!entries.length) {
+      el.innerHTML = `<div class="empty-state"><span class="material-icons-round">verified</span><p>No void records${auditVoidFilter !== 'all' ? ' for this filter' : ''}</p></div>`;
+      return;
+    }
+
+    el.innerHTML = entries.map(e => {
+      const time = fmtAuditTime(e.timestamp);
+      const isOrder = e.action === 'order.void';
+      const label = isOrder ? `Bill #${e.orderNumber || '—'}` : `${e.poNumber || 'PO'}`;
+      const total = isOrder
+        ? (e.snapshot && typeof e.snapshot.total === 'number' ? fmt(e.snapshot.total) : '')
+        : (e.snapshot && typeof e.snapshot.totalAmount === 'number' ? fmt(e.snapshot.totalAmount) : '');
+      const summary = isOrder
+        ? ((e.snapshot && (e.snapshot.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ')) || '')
+        : ((e.snapshot && (e.snapshot.items || []).map(i => `${i.quantity} ${i.name}`).join(', ')) || '');
+      const invReversal = !isOrder && Array.isArray(e.inventoryAdjustments) && e.inventoryAdjustments.length
+        ? `<div style="font-size:11px;color:var(--warning);margin-top:4px">Inventory reversed: ${e.inventoryAdjustments.map(a => `${a.reversed} ${a.name}`).join(', ')}</div>`
+        : '';
+      return `
+        <div class="audit-entry">
+          <div class="audit-entry-row">
+            <div class="audit-user">
+              <span class="material-icons-round" style="color:var(--danger)">${isOrder ? 'receipt_long' : 'shopping_cart'}</span>
+              <div>
+                <div class="audit-name">${label}${total ? ' · ' + total : ''}</div>
+                <div class="audit-role">${isOrder ? 'Voided Bill' : 'Voided Purchase Order'}</div>
+              </div>
+            </div>
+            <span class="audit-status audit-status-fail">VOIDED</span>
+          </div>
+          <div class="audit-meta">
+            <span class="material-icons-round">schedule</span>${time}
+            <span class="material-icons-round">person</span>${escapeHtml(e.actorName || '—')} (${escapeHtml(e.actorRole || '—')})
+          </div>
+          ${summary ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Items:</strong> ${escapeHtml(summary)}</div>` : ''}
+          <div style="font-size:12px;color:var(--text);margin-top:4px"><strong>Reason:</strong> ${escapeHtml(e.reason || '—')}</div>
+          ${invReversal}
+        </div>`;
+    }).join('');
   }
 
   function renderAuditLog(log) {

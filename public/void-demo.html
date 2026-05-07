@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Void UI Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2">
+  <style>
+    body { background: var(--bg, #0f1419); color: var(--text, #fff); font-family: Inter, system-ui, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }
+    h2 { margin: 24px 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #8a939e); border-bottom: 1px solid var(--border, #2a3038); padding-bottom: 6px; }
+    .demo-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .demo-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+
+<h1 style="font-size:18px;margin:0 0 8px">Void UI — Preview</h1>
+<p style="color:var(--text-muted,#8a939e);font-size:13px;margin:0 0 20px">Admin (manager role) view. The Void button only renders for admin.</p>
+
+<h2>Bills (Order Cards)</h2>
+<div class="demo-grid">
+
+  <!-- 1. Unpaid order — admin sees Void in the action row -->
+  <div class="order-card" data-id="demo1">
+    <div class="order-card-header">
+      <span class="order-num">#JK01 • T3</span>
+      <div style="display:flex;gap:4px">
+        <span class="badge badge-new">Walk-in</span>
+        <span class="badge badge-new">new</span>
+      </div>
+    </div>
+    <div class="order-card-items">2x Beef Stew, 1x Soda</div>
+    <div class="order-card-customer">
+      <span class="material-icons-round" style="font-size:14px;color:var(--text-dim)">person</span>
+      <span style="flex:1;font-size:12px">James Okello</span>
+      <button class="btn-icon" title="Edit details">
+        <span class="material-icons-round" style="font-size:16px">edit</span>
+      </button>
+      <span style="font-size:11px;color:var(--text-dim);margin-left:4px">by Jackie</span>
+    </div>
+    <div class="order-card-footer">
+      <span class="order-card-total">UGX 28,000</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span class="badge badge-unpaid">unpaid</span>
+        <span style="font-size:12px;color:var(--text-muted)">12:42</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-success">Cash</button>
+      <button class="btn btn-sm btn-warning">M-Money</button>
+      <button class="btn btn-sm btn-outline">Card</button>
+      <button class="btn btn-sm btn-outline" style="color:var(--info);border-color:var(--info)">Credit</button>
+      <button class="btn btn-sm btn-outline">Receipt</button>
+      <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);margin-left:auto">Void</button>
+    </div>
+  </div>
+
+  <!-- 2. Voided order — opacity dimmed, badge, struck total, audit footer -->
+  <div class="order-card order-card-voided" data-id="demo2" style="opacity:0.65">
+    <div class="order-card-header">
+      <span class="order-num">#JK02 • T5</span>
+      <div style="display:flex;gap:4px">
+        <span class="badge" style="background:var(--danger);color:#fff">VOIDED</span>
+        <span class="badge badge-preparing">Community</span>
+        <span class="badge badge-new">new</span>
+      </div>
+    </div>
+    <div class="order-card-items">3x Matooke + Beans, 1x Greens</div>
+    <div class="order-card-customer">
+      <span class="material-icons-round" style="font-size:14px;color:var(--text-dim)">person</span>
+      <span style="flex:1;font-size:12px">Walk-in</span>
+      <span style="font-size:11px;color:var(--text-dim);margin-left:4px">by Jackie</span>
+    </div>
+    <div class="order-card-footer">
+      <span class="order-card-total" style="text-decoration:line-through">UGX 22,000</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span class="badge badge-unpaid">unpaid</span>
+        <span style="font-size:12px;color:var(--text-muted)">12:48</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:rgba(220,53,69,0.08);border-left:3px solid var(--danger);border-radius:4px;font-size:12px">
+      <div style="color:var(--danger);font-weight:600;margin-bottom:2px">Voided 12:51 by Admin</div>
+      <div style="color:var(--text-muted)">Reason: Wrong table selected — duplicate ticket</div>
+    </div>
+  </div>
+
+</div>
+
+<h2>Purchase Orders</h2>
+<div class="demo-grid">
+
+  <!-- 3. Active PO — admin sees Void aligned right -->
+  <div class="po-card">
+    <div class="po-card-header">
+      <h4>PO-MA9F2K1</h4>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge badge-pending">pending</span>
+        <span class="badge badge-pay-unpaid">Unpaid</span>
+      </div>
+    </div>
+    <div class="po-card-detail">
+      Vendor: Kabaale Wholesalers<br>
+      Date: 6 May 2026 · Credit: 14 days<br>
+      Due: <span style="color:var(--text-muted)">20 May 2026</span><br>
+      Items: 2 Cooking Oil 5L, 5 Rice 25kg<br>
+      Total: UGX 380,000
+    </div>
+    <div class="po-card-actions">
+      <button class="btn btn-sm btn-success">Mark Received</button>
+      <button class="btn btn-sm btn-outline" style="color:var(--danger)">Cancel</button>
+      <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);margin-left:auto">Void</button>
+    </div>
+  </div>
+
+  <!-- 4. Voided PO -->
+  <div class="po-card" style="opacity:0.65">
+    <div class="po-card-header">
+      <h4>PO-MA9F1Q3</h4>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge" style="background:var(--danger);color:#fff">VOIDED</span>
+        <span class="badge badge-received">received</span>
+        <span class="badge badge-pay-unpaid">Unpaid</span>
+      </div>
+    </div>
+    <div class="po-card-detail">
+      Vendor: Sample Supplier<br>
+      Date: 6 May 2026<br>
+      Items: 10 Tomatoes (kg), 5 Onions (kg)<br>
+      Total: UGX 95,000
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:rgba(220,53,69,0.08);border-left:3px solid var(--danger);border-radius:4px;font-size:12px">
+      <div style="color:var(--danger);font-weight:600;margin-bottom:2px">Voided 6 May 2026 by Admin</div>
+      <div style="color:var(--text-muted)">Reason: Wrong vendor selected — corrected on PO-MA9F2L7</div>
+    </div>
+  </div>
+
+</div>
+
+<h2>Void Confirmation Modal — Bill</h2>
+<div style="position:relative;background:var(--bg-card,#1a1f26);border-radius:12px;padding:20px;border:1px solid var(--border,#2a3038);max-width:480px">
+  <h3 style="margin:0 0 14px;font-size:16px">Void Order #JK01</h3>
+  <div style="text-align:center;padding:8px 0 12px">
+    <span class="material-icons-round" style="font-size:40px;color:var(--danger);margin-bottom:8px">block</span>
+    <p style="margin-bottom:4px"><strong>Voiding will:</strong></p>
+    <ul style="text-align:left;margin:8px 24px 12px;color:var(--text-muted);font-size:13px;line-height:1.6">
+      <li>Restore deducted stock</li>
+      <li>Exclude this bill from revenue, receivables &amp; the daily reconciliation</li>
+      <li>Keep an audit-log entry visible to admin</li>
+    </ul>
+    <p style="font-size:12px;color:var(--danger)">If cash was already collected, refund the customer separately.</p>
+  </div>
+  <div class="form-group"><label>Reason (required)</label>
+    <textarea class="input" rows="3" placeholder="e.g. Wrong items charged, duplicate ticket...">Wrong table selected — duplicate ticket</textarea>
+  </div>
+  <button class="btn btn-danger btn-block">Confirm Void</button>
+</div>
+
+<h2>Void Confirmation Modal — PO with payment block</h2>
+<div style="position:relative;background:var(--bg-card,#1a1f26);border-radius:12px;padding:20px;border:1px solid var(--border,#2a3038);max-width:480px">
+  <h3 style="margin:0 0 14px;font-size:16px">Void PO-MA9F2K1</h3>
+  <div style="text-align:center;padding:8px 0 12px">
+    <span class="material-icons-round" style="font-size:40px;color:var(--danger);margin-bottom:8px">block</span>
+    <p style="margin-bottom:4px"><strong>Voiding will:</strong></p>
+    <ul style="text-align:left;margin:8px 24px 12px;color:var(--text-muted);font-size:13px;line-height:1.6">
+      <li>Remove this PO from payables &amp; the balance sheet</li>
+      <li><strong>Reverse the inventory increase</strong> from the receipt (rejected if stock has been consumed below the received quantity)</li>
+      <li>Keep an audit-log entry visible to admin</li>
+    </ul>
+    <p style="font-size:12px;color:var(--danger)">This PO has UGX 50,000 recorded as paid. Reverse the payment(s) before voiding.</p>
+  </div>
+  <div class="form-group"><label>Reason (required)</label>
+    <textarea class="input" rows="3" placeholder="e.g. Wrong vendor, duplicate PO, qty error..." disabled></textarea>
+  </div>
+  <button class="btn btn-danger btn-block" disabled>Confirm Void</button>
+</div>
+
+<h2>System Audit — Voids tab</h2>
+<div style="background:var(--bg-card,#1a1f26);border-radius:12px;padding:16px;border:1px solid var(--border,#2a3038)">
+  <div class="audit-source-toggle" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <button class="audit-source-btn">Login History</button>
+    <button class="audit-source-btn active">Voided Bills &amp; POs</button>
+  </div>
+  <div class="audit-toolbar">
+    <div class="audit-filters">
+      <button class="audit-void-filter active">All</button>
+      <button class="audit-void-filter">Bills</button>
+      <button class="audit-void-filter">Purchase Orders</button>
+    </div>
+  </div>
+
+  <div class="audit-entry" style="margin-top:10px">
+    <div class="audit-entry-row">
+      <div class="audit-user">
+        <span class="material-icons-round" style="color:var(--danger)">receipt_long</span>
+        <div>
+          <div class="audit-name">Bill #JK02 · UGX 22,000</div>
+          <div class="audit-role">Voided Bill</div>
+        </div>
+      </div>
+      <span class="audit-status audit-status-fail">VOIDED</span>
+    </div>
+    <div class="audit-meta">
+      <span class="material-icons-round">schedule</span>6 May 12:51
+      <span class="material-icons-round">person</span>Admin (manager)
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Items:</strong> 3x Matooke + Beans, 1x Greens</div>
+    <div style="font-size:12px;color:var(--text);margin-top:4px"><strong>Reason:</strong> Wrong table selected — duplicate ticket</div>
+  </div>
+
+  <div class="audit-entry" style="margin-top:10px">
+    <div class="audit-entry-row">
+      <div class="audit-user">
+        <span class="material-icons-round" style="color:var(--danger)">shopping_cart</span>
+        <div>
+          <div class="audit-name">PO-MA9F1Q3 · UGX 95,000</div>
+          <div class="audit-role">Voided Purchase Order</div>
+        </div>
+      </div>
+      <span class="audit-status audit-status-fail">VOIDED</span>
+    </div>
+    <div class="audit-meta">
+      <span class="material-icons-round">schedule</span>6 May 14:18
+      <span class="material-icons-round">person</span>Admin (manager)
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px"><strong>Items:</strong> 10 Tomatoes (kg), 5 Onions (kg)</div>
+    <div style="font-size:12px;color:var(--text);margin-top:4px"><strong>Reason:</strong> Wrong vendor selected — corrected on PO-MA9F2L7</div>
+    <div style="font-size:11px;color:var(--warning);margin-top:4px">Inventory reversed: 10 Tomatoes, 5 Onions</div>
+  </div>
+</div>
+
+</body>
+</html>

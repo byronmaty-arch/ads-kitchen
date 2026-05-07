@@ -42,6 +42,10 @@ const CREDIT_PAY_SCHEMA = {
   note: { type: 'string', max: 500 }
 };
 
+const VOID_SCHEMA = {
+  reason: { type: 'string', max: 500, required: true }
+};
+
 function staffCodeFromName(name) {
   if (!name) return 'XX';
   const first = name.trim().split(/\s+/)[0] || name.trim();
@@ -140,6 +144,7 @@ router.put('/:id', (req, res) => {
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (orders[idx].voided) return res.status(400).json({ error: 'Order is voided and cannot be modified' });
   orders[idx] = { ...orders[idx], ...req.body };
   if (req.body.paymentStatus === 'paid' && !orders[idx].paidAt) orders[idx].paidAt = new Date().toISOString();
   if (req.body.paymentMethod === 'credit') {
@@ -170,6 +175,46 @@ router.delete('/:id', requireRole(['manager']), (req, res) => {
   res.json({ success: true });
 });
 
+// VOID — admin (manager) only. Soft-cancels the bill, restores stock, audits.
+// Voided orders remain in orders.json for transparency but are excluded from
+// revenue / receivables / dashboards / kitchen / reconciliation aggregates.
+router.post('/:id/void', requireRole(['manager']), (req, res) => {
+  const v = validate(req.body, VOID_SCHEMA);
+  if (v.error) return res.status(400).json({ error: v.error });
+  const orders = readData('orders.json');
+  const idx = orders.findIndex(o => o.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const target = orders[idx];
+  if (target.voided) return res.status(400).json({ error: 'Order is already voided' });
+
+  // Restore stock that was deducted at order creation
+  const required = computeRequiredStock(target.items);
+  applyStockDelta(required, +1, `order-void:${target.orderNumber}`, req.user);
+
+  const snapshot = JSON.parse(JSON.stringify(target));
+  const now = new Date().toISOString();
+  orders[idx] = {
+    ...target,
+    voided: true,
+    voidedAt: now,
+    voidedBy: { staffId: req.user.staffId, staffName: req.user.staffName, role: req.user.role },
+    voidReason: v.data.reason
+  };
+  writeData('orders.json', orders);
+
+  const log = readData('audit-log.json');
+  log.unshift({
+    id: uuidv4(), action: 'order.void', timestamp: now,
+    actorId: req.user.staffId, actorName: req.user.staffName, actorRole: req.user.role,
+    orderId: target.id, orderNumber: target.orderNumber,
+    reason: v.data.reason,
+    snapshot
+  });
+  writeData('audit-log.json', log.slice(0, 1000));
+
+  res.json(orders[idx]);
+});
+
 // Credit payments — manager and cashier only
 router.post('/:id/credit-pay', requireRole(['manager', 'cashier']), (req, res) => {
   const v = validate(req.body, CREDIT_PAY_SCHEMA);
@@ -177,6 +222,7 @@ router.post('/:id/credit-pay', requireRole(['manager', 'cashier']), (req, res) =
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (orders[idx].voided) return res.status(400).json({ error: 'Order is voided and cannot accept payments' });
   const amount = v.data.amount;
   const order = orders[idx];
   const newPaid = Math.min((order.creditAmountPaid || 0) + amount, order.total || 0);

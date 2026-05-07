@@ -458,7 +458,11 @@
           </div>
         </div>
         <div id="subtab-settings-audit" class="subtab-content">
-          <div class="audit-toolbar">
+          <div class="audit-source-toggle" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+            <button class="audit-source-btn active" data-source="login">Login History</button>
+            <button class="audit-source-btn" data-source="voids">Voided Bills &amp; POs</button>
+          </div>
+          <div class="audit-toolbar" id="audit-toolbar-login">
             <div class="audit-filters">
               <button class="audit-filter active" data-filter="all">All</button>
               <button class="audit-filter" data-filter="success">Success</button>
@@ -466,6 +470,13 @@
               <button class="audit-filter" data-filter="alerts">Alerts</button>
             </div>
             <button id="btn-clear-audit" class="btn btn-danger btn-sm">Clear Log</button>
+          </div>
+          <div class="audit-toolbar hidden" id="audit-toolbar-voids">
+            <div class="audit-filters">
+              <button class="audit-void-filter active" data-filter="all">All</button>
+              <button class="audit-void-filter" data-filter="order.void">Bills</button>
+              <button class="audit-void-filter" data-filter="purchase.void">Purchase Orders</button>
+            </div>
           </div>
           <div id="audit-log-list"></div>
         </div>

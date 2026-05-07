@@ -14,8 +14,9 @@ router.use(createRateLimiter({ windowMs: 60_000, max: 30, message: 'Report rate 
 const MAX_RANGE_DAYS = 90;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Revenue includes both fully paid and credit orders (food was served)
-function isRevenue(o) { return o.paymentStatus === 'paid' || o.paymentStatus === 'credit'; }
+// Revenue includes both fully paid and credit orders (food was served).
+// Voided orders are excluded — void backs out revenue/COGS/AR.
+function isRevenue(o) { return !o.voided && (o.paymentStatus === 'paid' || o.paymentStatus === 'credit'); }
 
 // Helper: build costing maps used by daily + range reports
 function buildCostingMaps() {
@@ -52,7 +53,7 @@ function buildWaiterPerformance(orders) {
 // Daily report
 router.get('/daily', (req, res) => {
   const date = req.query.date || new Date().toISOString().split('T')[0];
-  const orders = readData('orders.json').filter(o => o.date === date);
+  const orders = readData('orders.json').filter(o => o.date === date && !o.voided);
   const expenses = readData('expenses.json').filter(e => e.date === date);
   const { getItemCost, menuToStock } = buildCostingMaps();
 
@@ -119,7 +120,7 @@ router.get('/range', (req, res) => {
   if (days > MAX_RANGE_DAYS) {
     return res.status(400).json({ error: `Date range too large (${days} days). Maximum is ${MAX_RANGE_DAYS} days.` });
   }
-  const orders = readData('orders.json').filter(o => o.date >= from && o.date <= to);
+  const orders = readData('orders.json').filter(o => o.date >= from && o.date <= to && !o.voided);
   const expenses = readData('expenses.json').filter(e => e.date >= from && e.date <= to);
   const { getItemCost, menuToStock } = buildCostingMaps();
 
@@ -176,11 +177,11 @@ router.get('/balance-sheet', (req, res) => {
   const inventory = readData('inventory.json');
   const { getItemCost } = buildCostingMaps();
 
-  // Filter everything up to asOfDate
-  const ordersToDate = orders.filter(o => o.date <= asOfDate);
+  // Filter everything up to asOfDate; voided records do not affect the books.
+  const ordersToDate = orders.filter(o => o.date <= asOfDate && !o.voided);
   const expensesToDate = expenses.filter(e => e.date <= asOfDate);
   // PO date is a full ISO timestamp; compare just the YYYY-MM-DD prefix.
-  const purchasesToDate = purchases.filter(p => (p.date || '').slice(0, 10) <= asOfDate);
+  const purchasesToDate = purchases.filter(p => (p.date || '').slice(0, 10) <= asOfDate && !p.voided);
 
   // --- ASSETS ---
 

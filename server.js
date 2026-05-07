@@ -91,13 +91,14 @@ const MANAGER = ['manager'];
 // /api/kitchen → active orders for kitchen display
 app.get('/api/kitchen', (req, res) => {
   const orders = readData('orders.json');
-  res.json(orders.filter(o => ['new', 'preparing'].includes(o.status))
+  res.json(orders.filter(o => !o.voided && ['new', 'preparing'].includes(o.status))
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
 });
 app.put('/api/kitchen/:id/status', requireRole(['manager', 'kitchen']), (req, res) => {
   const orders = readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (orders[idx].voided) return res.status(400).json({ error: 'Order is voided' });
   orders[idx].status = req.body.status;
   if (req.body.status === 'ready') orders[idx].readyAt = new Date().toISOString();
   if (req.body.status === 'served') orders[idx].servedAt = new Date().toISOString();
@@ -108,7 +109,7 @@ app.put('/api/kitchen/:id/status', requireRole(['manager', 'kitchen']), (req, re
 // /api/dashboard → today's snapshot
 app.get('/api/dashboard', (req, res) => {
   const today = new Date().toISOString().split('T')[0];
-  let orders = readData('orders.json');
+  let orders = readData('orders.json').filter(o => !o.voided);
   if (req.query.staffId) orders = orders.filter(o => o.staffId === req.query.staffId);
   const todayOrders = orders.filter(o => o.date === today);
   const expenses = readData('expenses.json').filter(e => e.date === today);
@@ -138,7 +139,7 @@ app.get('/api/notifications',
   requireRole(['manager', 'kitchen', 'waiter']),
   (req, res) => {
   const { since, role } = req.query;
-  const orders = readData('orders.json');
+  const orders = readData('orders.json').filter(o => !o.voided);
   const sinceTime = since ? new Date(since) : new Date(0);
   if (role === 'kitchen') {
     res.json({ alerts: orders.filter(o => o.status === 'new' && new Date(o.createdAt) > sinceTime)
@@ -151,7 +152,7 @@ app.get('/api/notifications',
 
 // /api/receivables → credit sales tracking (manager + cashier only)
 app.get('/api/receivables', requireRole(MANAGER_CASHIER), (req, res) => {
-  const orders = readData('orders.json');
+  const orders = readData('orders.json').filter(o => !o.voided);
   const today = new Date().toISOString().split('T')[0];
   const creditOrders = orders.filter(o => o.paymentStatus === 'credit');
   let totalReceivable = 0;
@@ -240,6 +241,14 @@ app.get('/api/audit/login-log', requireRole(MANAGER), (req, res) => {
 app.delete('/api/audit/login-log', requireRole(MANAGER), (req, res) => {
   writeData('login-log.json', []);
   res.json({ ok: true });
+});
+
+// /api/audit/log → manager-only audit trail of voided bills + POs (and order deletes).
+// Optional ?action=order.void|purchase.void filter.
+app.get('/api/audit/log', requireRole(MANAGER), (req, res) => {
+  let log = readData('audit-log.json');
+  if (req.query.action) log = log.filter(e => e.action === req.query.action);
+  res.json(log);
 });
 
 // Manual backup trigger — timing-safe token comparison

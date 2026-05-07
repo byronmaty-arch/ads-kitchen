@@ -35,6 +35,10 @@ const PO_PAY_SCHEMA = {
   note: { type: 'string', max: 500 }
 };
 
+const VOID_SCHEMA = {
+  reason: { type: 'string', max: 500, required: true }
+};
+
 router.get('/', requireRole(MANAGER_CASHIER), (req, res) => {
   let purchases = readData('purchases.json');
   if (req.query.status) purchases = purchases.filter(p => p.status === req.query.status);
@@ -66,6 +70,7 @@ router.put('/:id', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (purchases[idx].voided) return res.status(400).json({ error: 'Purchase order is voided and cannot be modified' });
   purchases[idx] = { ...purchases[idx], ...v.data };
   if (req.body.status === 'received' && purchases[idx].items) {
     purchases[idx].receivedDate = new Date().toISOString();
@@ -101,6 +106,7 @@ router.post('/:id/pay', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
   const idx = purchases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (purchases[idx].voided) return res.status(400).json({ error: 'Purchase order is voided and cannot accept payments' });
   const amount = v.data.amount;
   const po = purchases[idx];
   const newPaid = Math.min((po.amountPaid || 0) + amount, po.totalAmount || 0);
@@ -117,6 +123,95 @@ router.post('/:id/pay', requireRole(MANAGER_CASHIER), (req, res) => {
   res.json(po);
 });
 
+// VOID — admin (manager) only. Soft-cancels the PO, reverses received-stock
+// inventory and audits. Voided POs are excluded from payables/balance-sheet.
+router.post('/:id/void', requireRole(['manager']), (req, res) => {
+  const v = validate(req.body, VOID_SCHEMA);
+  if (v.error) return res.status(400).json({ error: v.error });
+  const purchases = readData('purchases.json');
+  const idx = purchases.findIndex(p => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const target = purchases[idx];
+  if (target.voided) return res.status(400).json({ error: 'PO is already voided' });
+  if ((target.amountPaid || 0) > 0) {
+    return res.status(400).json({
+      error: 'PO has recorded payments. Reverse the payments before voiding (or cancel via vendor refund first).'
+    });
+  }
+
+  // If the PO was received, the inventory was increased at receive time.
+  // Reverse that increase. If any received item has been consumed below the
+  // received quantity, refuse so we never leave inventory negative.
+  let inventoryAdjustments = [];
+  if (target.status === 'received' && Array.isArray(target.items)) {
+    const inv = readData('inventory.json');
+    const shortages = [];
+    for (const poItem of target.items) {
+      const invIdx = inv.findIndex(i => i.id === poItem.inventoryId);
+      if (invIdx === -1) continue;
+      const onHand = Number(inv[invIdx].quantity || 0);
+      const recv = Number(poItem.quantity || 0);
+      if (onHand < recv) {
+        shortages.push({ name: inv[invIdx].name, received: recv, onHand, unit: inv[invIdx].unit || '' });
+      }
+    }
+    if (shortages.length > 0) {
+      return res.status(400).json({
+        error: 'Cannot void — received stock has been consumed since receipt: ' +
+          shortages.map(s => `${s.name} (received ${s.received}${s.unit}, on hand ${s.onHand}${s.unit})`).join('; '),
+        shortages
+      });
+    }
+    // Apply reversal
+    const stockLogs = readData('stock-log.json');
+    const now = new Date().toISOString();
+    for (const poItem of target.items) {
+      const invIdx = inv.findIndex(i => i.id === poItem.inventoryId);
+      if (invIdx === -1) continue;
+      const recv = Number(poItem.quantity || 0);
+      inv[invIdx].quantity = Number(inv[invIdx].quantity || 0) - recv;
+      stockLogs.push({
+        id: uuidv4(),
+        itemId: inv[invIdx].id,
+        itemName: inv[invIdx].name,
+        adjustment: -recv,
+        reason: `po-void:${target.poNumber}`,
+        newQuantity: inv[invIdx].quantity,
+        timestamp: now,
+        recordedBy: req.user.staffId,
+        recordedByName: req.user.staffName
+      });
+      inventoryAdjustments.push({ itemId: inv[invIdx].id, name: inv[invIdx].name, reversed: recv });
+    }
+    writeData('inventory.json', inv);
+    writeData('stock-log.json', stockLogs);
+  }
+
+  const snapshot = JSON.parse(JSON.stringify(target));
+  const now = new Date().toISOString();
+  purchases[idx] = {
+    ...target,
+    voided: true,
+    voidedAt: now,
+    voidedBy: { staffId: req.user.staffId, staffName: req.user.staffName, role: req.user.role },
+    voidReason: v.data.reason
+  };
+  writeData('purchases.json', purchases);
+
+  const log = readData('audit-log.json');
+  log.unshift({
+    id: uuidv4(), action: 'purchase.void', timestamp: now,
+    actorId: req.user.staffId, actorName: req.user.staffName, actorRole: req.user.role,
+    purchaseId: target.id, poNumber: target.poNumber,
+    reason: v.data.reason,
+    inventoryAdjustments,
+    snapshot
+  });
+  writeData('audit-log.json', log.slice(0, 1000));
+
+  res.json(purchases[idx]);
+});
+
 // Payables summary
 router.get('/payables', requireRole(MANAGER_CASHIER), (req, res) => {
   const purchases = readData('purchases.json');
@@ -125,6 +220,7 @@ router.get('/payables', requireRole(MANAGER_CASHIER), (req, res) => {
   vendors.forEach(v => { vendorMap[v.id] = v.name; });
   const today = new Date().toISOString().split('T')[0];
   const unpaidPOs = purchases.filter(p =>
+    !p.voided &&
     (p.status === 'received' || p.status === 'pending') && p.paymentStatus !== 'paid'
   );
   let totalOutstanding = 0, totalOverdue = 0;
